@@ -2234,6 +2234,9 @@ if (toggleSwipeSelectBtn) {
     toggleSwipeSelectBtn.classList.toggle('active', swipeSelectEnabled);
     if (!swipeSelectEnabled) {
       clearSelection();
+      noteElements.forEach(n => n.classList.remove('phrase-highlight'));
+      clearPhraseBoxes();
+      clearFingeringNumbers();
     }
   });
 }
