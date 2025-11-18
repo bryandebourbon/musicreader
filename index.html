@@ -107,11 +107,12 @@ input[type="range"] {
 html, body {
   display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
   margin: 0;
   padding: 0;
-  height: 100%; 
+  height: 100vh;
+  min-height: 100vh;
   width: 100%;  
   overflow: hidden;
    -webkit-touch-callout: none;  /* iOS Safari */
@@ -621,7 +622,7 @@ svg {
   <button id="openFileBtn" class="tooltip" data-tooltip="Open File"><i class="fa-solid fa-plus"></i></button>
   <button id="toggleExtraControls" class="tooltip" data-tooltip="More"><i class="fa-solid fa-ellipsis"></i></button>
   <button id="toggleLibrary" class="tooltip" data-tooltip="Library"><i class="fa-solid fa-book"></i></button>
-  <button id="toggleSwipeSelect" class="tooltip active" data-tooltip="Swipe to Select"><i class="fa-solid fa-highlighter"></i></button>
+  <button id="toggleSwipeSelect" class="tooltip" data-tooltip="Swipe to Select"><i class="fa-solid fa-highlighter"></i></button>
   <button onclick="addStaffBlock()" class="tooltip" data-tooltip="Add Staff"><i class="fa-solid fa-plus"></i></button>
   <button id="zoomIn" class="tooltip" data-tooltip="Zoom In"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
   <button id="zoomOut" class="tooltip" data-tooltip="Zoom Out"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
