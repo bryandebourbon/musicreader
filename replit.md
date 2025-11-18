@@ -10,6 +10,12 @@ eMusicReader is a browser-based music notation reader and editor that allows use
 - Created comprehensive technical documentation (DOCUMENTATION.md)
 - Documented complete architecture, data flow, and algorithms
 - Added detailed explanations of MusicXML processing, rendering, AI integration, and audio playback
+- Fixed toolbar to stay in single horizontal row with horizontal scrolling
+- Added swipe selection toggle button with red glow indicator
+- Fixed sheet music scrolling to vertical-only (no horizontal scrolling)
+- Centered sheet music content and aligned edges with viewport boundaries
+- Removed bottom padding to maximize visible sheet music area
+- Changed swipe selection to be disabled by default (must be manually enabled)
 
 **November 16, 2025**
 - Cloned repository from GitHub (bryandebourbon/eMusicReader)
