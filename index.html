@@ -210,7 +210,8 @@ svg {
   }
   /* Push sheet content down when AI search is open */
   body.ai-search-open .sheet {
-    padding-top: 200px;
+    margin-top: 200px;
+    height: calc(100vh - 200px);
   }
   .tooltip {
   position: relative;
@@ -275,13 +276,13 @@ svg {
   
 .sheet {
   padding: 0;
-  padding-top: 60px;
+  margin-top: 60px;
   padding-bottom: 0;
   position: relative;
   overflow-y: auto;
   overflow-x: hidden;
   width: 100%;
-  height: 100%;
+  height: calc(100vh - 60px);
   box-sizing: border-box;
   display: flex;
   justify-content: center;
