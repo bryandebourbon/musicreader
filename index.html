@@ -273,7 +273,7 @@ svg {
 }
   
 .sheet {
-  padding: 40px;
+  padding: 0;
   padding-top: 60px;
   padding-bottom: 20px;
   position: relative;
@@ -282,14 +282,18 @@ svg {
   width: 100%;
   height: 100%;
   box-sizing: border-box;
+  display: flex;
+  justify-content: center;
 }
 
 #zoomContainer {
   display: flex;
   flex-wrap: wrap;
-  transform-origin: 0 0;
+  transform-origin: center 0;
   width: 100%;
-  min-width: 100vw;
+  max-width: 100%;
+  padding: 0 20px;
+  box-sizing: border-box;
 }
 .measure {
   position: relative;
@@ -586,9 +590,6 @@ svg {
   .controls select,
   .controls input[type="number"] {
     font-size: 1.3em;
-  }
-  .sheet {
-    padding-top: 70px;
   }
 }
 
