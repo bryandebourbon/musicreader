@@ -195,6 +195,14 @@ svg {
   .controls input[type="number"] {
     flex-shrink: 0;
   }
+  #toggleSwipeSelect.active {
+    background-color: red !important;
+    color: white !important;
+    box-shadow: 0 0 10px red;
+  }
+  #toggleSwipeSelect.active i {
+    color: white !important;
+  }
   #aiModeWrapper {
     display: flex;
     align-items: center;
@@ -611,6 +619,7 @@ svg {
   <button id="openFileBtn" class="tooltip" data-tooltip="Open File"><i class="fa-solid fa-plus"></i></button>
   <button id="toggleExtraControls" class="tooltip" data-tooltip="More"><i class="fa-solid fa-ellipsis"></i></button>
   <button id="toggleLibrary" class="tooltip" data-tooltip="Library"><i class="fa-solid fa-book"></i></button>
+  <button id="toggleSwipeSelect" class="tooltip active" data-tooltip="Swipe to Select"><i class="fa-solid fa-highlighter"></i></button>
   <button onclick="addStaffBlock()" class="tooltip" data-tooltip="Add Staff"><i class="fa-solid fa-plus"></i></button>
   <button id="zoomIn" class="tooltip" data-tooltip="Zoom In"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
   <button id="zoomOut" class="tooltip" data-tooltip="Zoom Out"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
@@ -815,6 +824,7 @@ let allDetectedPatterns = {};
 let winningGroups = [];
 
 let autoFeaturesEnabled = false;
+let swipeSelectEnabled = true; // Toggle for swipe-to-select functionality
 
 let library = [];
 let openFiles = [];
@@ -2217,6 +2227,17 @@ if (toggleSoundBtn) {
   });
 }
 
+const toggleSwipeSelectBtn = document.getElementById('toggleSwipeSelect');
+if (toggleSwipeSelectBtn) {
+  toggleSwipeSelectBtn.addEventListener('click', () => {
+    swipeSelectEnabled = !swipeSelectEnabled;
+    toggleSwipeSelectBtn.classList.toggle('active', swipeSelectEnabled);
+    if (!swipeSelectEnabled) {
+      clearSelection();
+    }
+  });
+}
+
 function noteToFreq(note) {
   const match = note.match(/^([a-gA-G])(\d)$/);
   if (!match) return null;
@@ -2905,6 +2926,7 @@ function clearSelection() {
 }
 
 sheetElement.addEventListener("mousedown", e => {
+  if (!swipeSelectEnabled) return;
   const block = e.target.closest(".staff");
   if (!block) return;
   staffList = Array.from(sheetElement.querySelectorAll(".staff"));
@@ -2918,6 +2940,7 @@ sheetElement.addEventListener("mousedown", e => {
 });
 
 sheetElement.addEventListener("touchstart", e => {
+  if (!swipeSelectEnabled) return;
   const touch = e.touches[0];
   const el = touch ? document.elementFromPoint(touch.clientX, touch.clientY) : e.target;
   const block = el && el.closest(".staff");
@@ -2934,7 +2957,7 @@ sheetElement.addEventListener("touchstart", e => {
 });
 
 sheetElement.addEventListener("mousemove", e => {
-  if (!selecting) return;
+  if (!swipeSelectEnabled || !selecting) return;
   const block = e.target.closest(".staff");
   if (!block) return;
   const idx = staffList.indexOf(block);
@@ -2948,7 +2971,7 @@ sheetElement.addEventListener("mousemove", e => {
 });
 
 sheetElement.addEventListener("touchmove", e => {
-  if (!selecting) return;
+  if (!swipeSelectEnabled || !selecting) return;
   const touch = e.touches[0];
   const dx = Math.abs(touch.clientX - startX);
   const dy = Math.abs(touch.clientY - startY);
