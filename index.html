@@ -211,7 +211,7 @@ svg {
   /* Push sheet content down when AI search is open */
   body.ai-search-open .sheet {
     margin-top: 200px;
-    height: calc(100vh - 200px);
+    height: calc(100vh - 200px + env(safe-area-inset-bottom, 0px));
   }
   .tooltip {
   position: relative;
@@ -282,7 +282,7 @@ svg {
   overflow-y: auto;
   overflow-x: hidden;
   width: 100%;
-  height: calc(100vh - 60px);
+  height: calc(100vh - 60px + env(safe-area-inset-bottom, 0px));
   box-sizing: border-box;
   display: flex;
   justify-content: center;
