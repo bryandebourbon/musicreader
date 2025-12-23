@@ -7,6 +7,8 @@ eMusicReader is a browser-based music notation reader and editor that allows use
 ## Recent Changes
 
 **December 23, 2025**
+- Added zoom level picker: tap Zoom button to see 200%, 150%, 100%, 50% options
+- Zoom picker syncs with desktop zoom controls and pinch gestures
 - Added server-side file storage with validation for security
 - Files are validated before storage to prevent corrupt or malicious content:
   - MusicXML: Validates XML structure, required elements, scans for scripts/malicious entities

@@ -634,6 +634,66 @@ svg {
   color: #007AFF;
 }
 
+.zoom-picker-container {
+  position: relative;
+}
+
+.zoom-picker-container button {
+  background: none;
+  border: none;
+  color: var(--line-color);
+  font-size: 1.5em;
+  padding: 8px 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.zoom-picker-container button span {
+  font-size: 0.5em;
+}
+
+.zoom-picker {
+  display: none;
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--space-color);
+  border: 1px solid var(--line-color);
+  border-radius: 8px;
+  padding: 4px;
+  margin-bottom: 8px;
+  flex-direction: column;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
+}
+
+.zoom-picker.open {
+  display: flex;
+}
+
+.zoom-picker .zoom-level {
+  padding: 12px 20px;
+  border: none;
+  background: none;
+  color: var(--line-color);
+  font-size: 1em;
+  cursor: pointer;
+  white-space: nowrap;
+  border-radius: 4px;
+}
+
+.zoom-picker .zoom-level:hover {
+  background-color: rgba(0,122,255,0.1);
+}
+
+.zoom-picker .zoom-level.active {
+  color: #007AFF;
+  font-weight: bold;
+}
+
 .mobile-menu-overlay {
   display: none;
   position: fixed;
@@ -856,10 +916,18 @@ svg {
     <i class="fa-solid fa-play"></i>
     <span>Play</span>
   </button>
-  <button id="mobileZoomIn">
-    <i class="fa-solid fa-magnifying-glass-plus"></i>
-    <span>Zoom</span>
-  </button>
+  <div class="zoom-picker-container">
+    <button id="mobileZoomBtn">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <span>100%</span>
+    </button>
+    <div class="zoom-picker" id="zoomPicker">
+      <button class="zoom-level" data-zoom="2">200%</button>
+      <button class="zoom-level" data-zoom="1.5">150%</button>
+      <button class="zoom-level active" data-zoom="1">100%</button>
+      <button class="zoom-level" data-zoom="0.5">50%</button>
+    </div>
+  </div>
   <button id="mobileOpenFile">
     <i class="fa-solid fa-folder-open"></i>
     <span>Open</span>
@@ -920,10 +988,6 @@ svg {
   <div class="mobile-menu-section">
     <h4>Display</h4>
     <div class="mobile-menu-grid">
-      <button class="mobile-menu-item" id="mobileZoomOut">
-        <i class="fa-solid fa-magnifying-glass-minus"></i>
-        Zoom Out
-      </button>
       <button class="mobile-menu-item" id="mobileRefreshTies">
         <i class="fa-solid fa-arrows-rotate"></i>
         Refresh
@@ -1364,6 +1428,30 @@ function setZoomLevel(newZoomLevel) {
   const adjustedWidth = 100 / zoomLevel;
   zoomContainer.style.width = `${adjustedWidth}vw`;
   zoomContainer.style.minWidth = `${adjustedWidth}vw`;
+  
+  // Sync mobile zoom picker
+  syncMobileZoomPicker();
+}
+
+function syncMobileZoomPicker() {
+  const mobileZoomBtn = document.getElementById('mobileZoomBtn');
+  const zoomPicker = document.getElementById('zoomPicker');
+  if (!mobileZoomBtn || !zoomPicker) return;
+  
+  const percentage = Math.round(zoomLevel * 100);
+  const label = mobileZoomBtn.querySelector('span');
+  if (label) label.textContent = percentage + '%';
+  
+  // Update active state on zoom levels
+  const levels = [2, 1.5, 1, 0.5];
+  let closestLevel = levels.reduce((prev, curr) => 
+    Math.abs(curr - zoomLevel) < Math.abs(prev - zoomLevel) ? curr : prev
+  );
+  
+  zoomPicker.querySelectorAll('.zoom-level').forEach(btn => {
+    const btnZoom = parseFloat(btn.dataset.zoom);
+    btn.classList.toggle('active', btnZoom === closestLevel);
+  });
 }
 
 // Initialize with proper zoom level
@@ -3502,11 +3590,36 @@ function syncMobilePlayIcon() {
   }
 }
 
-const mobileZoomIn = document.getElementById('mobileZoomIn');
-if (mobileZoomIn) {
-  mobileZoomIn.addEventListener('click', () => {
-    const zoomInBtn = document.getElementById('zoomIn');
-    if (zoomInBtn) zoomInBtn.click();
+const mobileZoomBtn = document.getElementById('mobileZoomBtn');
+const zoomPicker = document.getElementById('zoomPicker');
+
+if (mobileZoomBtn && zoomPicker) {
+  mobileZoomBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    zoomPicker.classList.toggle('open');
+  });
+  
+  document.querySelectorAll('.zoom-level').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const newZoom = parseFloat(btn.dataset.zoom);
+      setZoomLevel(newZoom);
+      if (autoFeaturesEnabled) tieify();
+      
+      document.querySelectorAll('.zoom-level').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      
+      const label = mobileZoomBtn.querySelector('span');
+      if (label) label.textContent = btn.textContent;
+      
+      zoomPicker.classList.remove('open');
+    });
+  });
+  
+  document.addEventListener('click', (e) => {
+    if (!zoomPicker.contains(e.target) && !mobileZoomBtn.contains(e.target)) {
+      zoomPicker.classList.remove('open');
+    }
   });
 }
 
@@ -3612,14 +3725,6 @@ if (mobileNextPage) {
     const nextPage = document.getElementById('nextPage');
     if (nextPage) nextPage.click();
     closeMobileMenu();
-  });
-}
-
-const mobileZoomOut = document.getElementById('mobileZoomOut');
-if (mobileZoomOut) {
-  mobileZoomOut.addEventListener('click', () => {
-    const zoomOut = document.getElementById('zoomOut');
-    if (zoomOut) zoomOut.click();
   });
 }
 
