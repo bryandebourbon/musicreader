@@ -173,7 +173,8 @@ svg {
     bottom: 0;
     right: 0;
     background-color: var(--space-color);
-    padding: 10px;
+    padding: 16px;
+    padding-top: env(safe-area-inset-top, 16px);
     padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
     overflow-y: auto;
     display: none;
@@ -183,33 +184,74 @@ svg {
   #searchTray.open {
     display: flex;
   }
-  #searchTray > button:first-child {
-    align-self: flex-start;
-    margin-bottom: 10px;
+  .search-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .search-header button {
+    background: none;
+    border: none;
+    color: var(--line-color);
+    font-size: 1.2em;
+    padding: 8px;
+    cursor: pointer;
+  }
+  .search-header h3 {
+    margin: 0;
+    color: var(--line-color);
+    font-size: 1.3em;
+    font-weight: 600;
+  }
+  .search-input-wrapper {
+    display: flex;
+    align-items: center;
+    background: rgba(128, 128, 128, 0.15);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+  }
+  .search-input-wrapper i {
+    color: var(--line-color);
+    opacity: 0.5;
+    margin-right: 10px;
+  }
+  .search-input-wrapper input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: var(--line-color);
+    font-size: 16px;
+    outline: none;
+  }
+  .search-input-wrapper input::placeholder {
+    color: var(--line-color);
+    opacity: 0.5;
   }
   #searchList {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    margin-top: 10px;
   }
   #searchList .library-item {
     display: flex;
     align-items: center;
-    padding: 12px;
-    background: var(--space-color);
-    border: 1px solid var(--line-color);
-    border-radius: 8px;
+    padding: 14px 16px;
+    background: rgba(128, 128, 128, 0.1);
+    border: none;
+    border-radius: 10px;
     cursor: pointer;
     transition: background 0.2s;
   }
-  #searchList .library-item:hover {
-    background: rgba(128, 128, 128, 0.1);
+  #searchList .library-item:active {
+    background: rgba(128, 128, 128, 0.25);
   }
   #searchList .library-item i {
-    margin-right: 12px;
-    font-size: 1.2em;
+    margin-right: 14px;
+    font-size: 1.1em;
     color: var(--line-color);
+    opacity: 0.7;
   }
   #searchList .library-item-name {
     flex: 1;
@@ -219,8 +261,9 @@ svg {
   #searchList .no-results {
     text-align: center;
     color: var(--line-color);
-    opacity: 0.6;
-    padding: 20px;
+    opacity: 0.5;
+    padding: 40px 20px;
+    font-size: 0.95em;
   }
   .controls button,
   .controls i,
@@ -949,8 +992,14 @@ svg {
 <div id="scoreInfo"></div>
 
 <div id="searchTray">
-  <button id="searchBack" class="tooltip" data-tooltip="Back"><i class="fa-solid fa-arrow-left"></i></button>
-  <input type="text" id="librarySearchInput" placeholder="Search your music library..." style="flex:1; padding:10px; margin:0 10px; border:1px solid var(--line-color); background:var(--space-color); color:var(--line-color); border-radius:4px; font-size:16px;">
+  <div class="search-header">
+    <button id="searchBack"><i class="fa-solid fa-arrow-left"></i></button>
+    <h3>Your Music</h3>
+  </div>
+  <div class="search-input-wrapper">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <input type="text" id="librarySearchInput" placeholder="Search...">
+  </div>
   <div id="searchList"></div>
 </div>
 
