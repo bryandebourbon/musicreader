@@ -585,14 +585,151 @@ svg {
 
 @media (max-width: 600px) {
   .controls {
-    gap: 8px;
-    padding: 8px 4px;
+    display: none !important;
   }
-  .controls button,
-  .controls select,
-  .controls input[type="number"] {
-    font-size: 1.3em;
+  .sheet {
+    padding-bottom: 70px;
   }
+}
+
+.bottom-bar {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: var(--space-color);
+  border-top: 1px solid var(--line-color);
+  padding: 8px 0;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  z-index: 100;
+  justify-content: space-around;
+  align-items: center;
+}
+
+@media (max-width: 600px) {
+  .bottom-bar {
+    display: flex;
+  }
+}
+
+.bottom-bar button {
+  background: none;
+  border: none;
+  color: var(--line-color);
+  font-size: 1.5em;
+  padding: 8px 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.bottom-bar button span {
+  font-size: 0.5em;
+}
+
+.bottom-bar button.active {
+  color: #007AFF;
+}
+
+.mobile-menu-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 99;
+}
+
+.mobile-menu-overlay.open {
+  display: block;
+}
+
+.mobile-menu {
+  position: fixed;
+  bottom: -100%;
+  left: 0;
+  right: 0;
+  background-color: var(--space-color);
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  padding: 20px;
+  padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  z-index: 101;
+  transition: bottom 0.3s ease;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.mobile-menu.open {
+  bottom: 0;
+}
+
+.mobile-menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line-color);
+}
+
+.mobile-menu-header h3 {
+  margin: 0;
+  color: var(--line-color);
+}
+
+.mobile-menu-close {
+  background: none;
+  border: none;
+  font-size: 1.5em;
+  color: var(--line-color);
+  cursor: pointer;
+}
+
+.mobile-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.mobile-menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px solid var(--line-color);
+  border-radius: 12px;
+  padding: 12px 8px;
+  color: var(--line-color);
+  font-size: 0.8em;
+  cursor: pointer;
+}
+
+.mobile-menu-item i {
+  font-size: 1.5em;
+}
+
+.mobile-menu-item.active {
+  background-color: var(--line-color);
+  color: var(--space-color);
+}
+
+.mobile-menu-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line-color);
+}
+
+.mobile-menu-section h4 {
+  margin: 0 0 12px 0;
+  color: var(--line-color);
+  font-size: 0.9em;
 }
 
 /* .tie-under {
@@ -705,6 +842,100 @@ svg {
       <label for="apiKeyInput">OpenAI API Key:</label>
       <input type="password" id="apiKeyInput" placeholder="Enter your OpenAI API Key">
       <button onclick="storeApiKey()">Save Key</button>
+    </div>
+  </div>
+</div>
+
+<!-- Mobile Bottom Bar -->
+<div class="bottom-bar">
+  <button id="mobileToggleDarkMode">
+    <i class="fa-solid fa-moon"></i>
+    <span>Dark</span>
+  </button>
+  <button id="mobilePlayStaff">
+    <i class="fa-solid fa-play"></i>
+    <span>Play</span>
+  </button>
+  <button id="mobileZoomIn">
+    <i class="fa-solid fa-magnifying-glass-plus"></i>
+    <span>Zoom</span>
+  </button>
+  <button id="mobileOpenFile">
+    <i class="fa-solid fa-folder-open"></i>
+    <span>Open</span>
+  </button>
+  <button id="mobileSearchMelody">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span>Search</span>
+  </button>
+  <button id="mobileMenuBtn">
+    <i class="fa-solid fa-bars"></i>
+    <span>Menu</span>
+  </button>
+</div>
+
+<!-- Mobile Menu Overlay -->
+<div class="mobile-menu-overlay" id="mobileMenuOverlay"></div>
+
+<!-- Mobile Menu -->
+<div class="mobile-menu" id="mobileMenu">
+  <div class="mobile-menu-header">
+    <h3>Menu</h3>
+    <button class="mobile-menu-close" id="mobileMenuClose"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="mobile-menu-grid">
+    <button class="mobile-menu-item" id="mobileLibrary">
+      <i class="fa-solid fa-book"></i>
+      Library
+    </button>
+    <button class="mobile-menu-item" id="mobileSettings">
+      <i class="fa-solid fa-gear"></i>
+      Settings
+    </button>
+    <button class="mobile-menu-item" id="mobileSwipeSelect">
+      <i class="fa-solid fa-highlighter"></i>
+      Select
+    </button>
+    <button class="mobile-menu-item" id="mobileScoreInfo">
+      <i class="fa-solid fa-circle-info"></i>
+      Info
+    </button>
+    <button class="mobile-menu-item" id="mobileSound">
+      <i class="fa-solid fa-volume-high"></i>
+      Sound
+    </button>
+    <button class="mobile-menu-item" id="mobileAI">
+      <i class="fa-solid fa-brain"></i>
+      AI Mode
+    </button>
+    <button class="mobile-menu-item" id="mobilePrevPage">
+      <i class="fa-solid fa-arrow-left"></i>
+      Prev
+    </button>
+    <button class="mobile-menu-item" id="mobileNextPage">
+      <i class="fa-solid fa-arrow-right"></i>
+      Next
+    </button>
+  </div>
+  <div class="mobile-menu-section">
+    <h4>Display</h4>
+    <div class="mobile-menu-grid">
+      <button class="mobile-menu-item" id="mobileZoomOut">
+        <i class="fa-solid fa-magnifying-glass-minus"></i>
+        Zoom Out
+      </button>
+      <button class="mobile-menu-item" id="mobileRefreshTies">
+        <i class="fa-solid fa-arrows-rotate"></i>
+        Refresh
+      </button>
+      <button class="mobile-menu-item" id="mobileRenderBeams">
+        <i class="fa-solid fa-bars-staggered"></i>
+        Beams
+      </button>
+      <button class="mobile-menu-item" id="mobileAddStaff">
+        <i class="fa-solid fa-plus"></i>
+        Add Staff
+      </button>
     </div>
   </div>
 </div>
@@ -3173,5 +3404,215 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('service-worker.js');
   });
 }
+
+// Mobile Bottom Bar Event Handlers
+const mobileMenu = document.getElementById('mobileMenu');
+const mobileMenuOverlay = document.getElementById('mobileMenuOverlay');
+const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+const mobileMenuClose = document.getElementById('mobileMenuClose');
+
+function openMobileMenu() {
+  mobileMenu.classList.add('open');
+  mobileMenuOverlay.classList.add('open');
+}
+
+function closeMobileMenu() {
+  mobileMenu.classList.remove('open');
+  mobileMenuOverlay.classList.remove('open');
+}
+
+if (mobileMenuBtn) mobileMenuBtn.addEventListener('click', openMobileMenu);
+if (mobileMenuClose) mobileMenuClose.addEventListener('click', closeMobileMenu);
+if (mobileMenuOverlay) mobileMenuOverlay.addEventListener('click', closeMobileMenu);
+
+// Mobile bottom bar buttons
+const mobileToggleDarkMode = document.getElementById('mobileToggleDarkMode');
+if (mobileToggleDarkMode) {
+  mobileToggleDarkMode.addEventListener('click', () => {
+    const desktopDarkMode = document.getElementById('toggleDarkMode');
+    if (desktopDarkMode) desktopDarkMode.click();
+    syncMobileDarkModeIcon();
+  });
+}
+
+function syncMobileDarkModeIcon() {
+  const mobileIcon = mobileToggleDarkMode?.querySelector('i');
+  const isDark = document.body.classList.contains('dark-mode');
+  if (mobileIcon) {
+    mobileIcon.classList.toggle('fa-moon', !isDark);
+    mobileIcon.classList.toggle('fa-sun', isDark);
+  }
+  mobileToggleDarkMode?.classList.toggle('active', isDark);
+}
+
+const mobilePlayStaff = document.getElementById('mobilePlayStaff');
+if (mobilePlayStaff) {
+  mobilePlayStaff.addEventListener('click', () => {
+    const playBtn = document.getElementById('playStaff');
+    if (playBtn) playBtn.click();
+    setTimeout(syncMobilePlayIcon, 50);
+  });
+}
+
+function syncMobilePlayIcon() {
+  const desktopIcon = document.getElementById('playStaff')?.querySelector('i');
+  const mobileIcon = mobilePlayStaff?.querySelector('i');
+  if (desktopIcon && mobileIcon) {
+    const isPlaying = desktopIcon.classList.contains('fa-stop');
+    mobileIcon.classList.toggle('fa-play', !isPlaying);
+    mobileIcon.classList.toggle('fa-stop', isPlaying);
+  }
+}
+
+const mobileZoomIn = document.getElementById('mobileZoomIn');
+if (mobileZoomIn) {
+  mobileZoomIn.addEventListener('click', () => {
+    const zoomInBtn = document.getElementById('zoomIn');
+    if (zoomInBtn) zoomInBtn.click();
+  });
+}
+
+const mobileOpenFile = document.getElementById('mobileOpenFile');
+if (mobileOpenFile) {
+  mobileOpenFile.addEventListener('click', () => {
+    const xmlInput = document.getElementById('xmlInput');
+    if (xmlInput) xmlInput.click();
+  });
+}
+
+const mobileSearchMelody = document.getElementById('mobileSearchMelody');
+if (mobileSearchMelody) {
+  mobileSearchMelody.addEventListener('click', () => {
+    const searchBtn = document.getElementById('searchMelody');
+    if (searchBtn) searchBtn.click();
+  });
+}
+
+// Mobile menu items
+const mobileLibrary = document.getElementById('mobileLibrary');
+if (mobileLibrary) {
+  mobileLibrary.addEventListener('click', () => {
+    const toggleLibrary = document.getElementById('toggleLibrary');
+    if (toggleLibrary) toggleLibrary.click();
+    closeMobileMenu();
+  });
+}
+
+const mobileSettings = document.getElementById('mobileSettings');
+if (mobileSettings) {
+  mobileSettings.addEventListener('click', () => {
+    const openSettings = document.getElementById('openSettings');
+    if (openSettings) openSettings.click();
+    closeMobileMenu();
+  });
+}
+
+const mobileSwipeSelect = document.getElementById('mobileSwipeSelect');
+if (mobileSwipeSelect) {
+  mobileSwipeSelect.addEventListener('click', () => {
+    const toggleSwipeSelect = document.getElementById('toggleSwipeSelect');
+    if (toggleSwipeSelect) toggleSwipeSelect.click();
+    mobileSwipeSelect.classList.toggle('active');
+    closeMobileMenu();
+  });
+}
+
+const mobileScoreInfo = document.getElementById('mobileScoreInfo');
+if (mobileScoreInfo) {
+  mobileScoreInfo.addEventListener('click', () => {
+    const toggleScoreInfo = document.getElementById('toggleScoreInfo');
+    if (toggleScoreInfo) toggleScoreInfo.click();
+    closeMobileMenu();
+  });
+}
+
+const mobileSound = document.getElementById('mobileSound');
+if (mobileSound) {
+  mobileSound.addEventListener('click', () => {
+    const toggleSound = document.getElementById('toggleSound');
+    if (toggleSound) toggleSound.click();
+    setTimeout(syncMobileSoundIcon, 50);
+  });
+}
+
+function syncMobileSoundIcon() {
+  const desktopIcon = document.getElementById('toggleSound')?.querySelector('i');
+  const mobileIcon = mobileSound?.querySelector('i');
+  if (desktopIcon && mobileIcon) {
+    const isMuted = desktopIcon.classList.contains('fa-volume-xmark');
+    mobileIcon.classList.toggle('fa-volume-high', !isMuted);
+    mobileIcon.classList.toggle('fa-volume-xmark', isMuted);
+  }
+}
+
+const mobileAI = document.getElementById('mobileAI');
+if (mobileAI) {
+  mobileAI.addEventListener('click', () => {
+    const aiModeSelect = document.getElementById('aiModeSelect');
+    if (aiModeSelect) {
+      const options = aiModeSelect.options;
+      const currentIndex = aiModeSelect.selectedIndex;
+      const nextIndex = (currentIndex + 1) % options.length;
+      aiModeSelect.selectedIndex = nextIndex;
+      aiModeSelect.dispatchEvent(new Event('change'));
+    }
+  });
+}
+
+const mobilePrevPage = document.getElementById('mobilePrevPage');
+if (mobilePrevPage) {
+  mobilePrevPage.addEventListener('click', () => {
+    const prevPage = document.getElementById('prevPage');
+    if (prevPage) prevPage.click();
+    closeMobileMenu();
+  });
+}
+
+const mobileNextPage = document.getElementById('mobileNextPage');
+if (mobileNextPage) {
+  mobileNextPage.addEventListener('click', () => {
+    const nextPage = document.getElementById('nextPage');
+    if (nextPage) nextPage.click();
+    closeMobileMenu();
+  });
+}
+
+const mobileZoomOut = document.getElementById('mobileZoomOut');
+if (mobileZoomOut) {
+  mobileZoomOut.addEventListener('click', () => {
+    const zoomOut = document.getElementById('zoomOut');
+    if (zoomOut) zoomOut.click();
+  });
+}
+
+const mobileRefreshTies = document.getElementById('mobileRefreshTies');
+if (mobileRefreshTies) {
+  mobileRefreshTies.addEventListener('click', () => {
+    const refreshTies = document.getElementById('refreshTies');
+    if (refreshTies) refreshTies.click();
+    closeMobileMenu();
+  });
+}
+
+const mobileRenderBeams = document.getElementById('mobileRenderBeams');
+if (mobileRenderBeams) {
+  mobileRenderBeams.addEventListener('click', () => {
+    const renderBeams = document.getElementById('renderBeams');
+    if (renderBeams) renderBeams.click();
+    closeMobileMenu();
+  });
+}
+
+const mobileAddStaff = document.getElementById('mobileAddStaff');
+if (mobileAddStaff) {
+  mobileAddStaff.addEventListener('click', () => {
+    addStaffBlock();
+    closeMobileMenu();
+  });
+}
+
+// Sync all mobile icons on load
+syncMobileDarkModeIcon();
+syncMobileSoundIcon();
 </script>
 </html>

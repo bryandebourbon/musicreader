@@ -6,6 +6,14 @@ eMusicReader is a browser-based music notation reader and editor that allows use
 
 ## Recent Changes
 
+**December 23, 2025**
+- Added mobile-friendly bottom navigation bar for iPhone/mobile devices
+- Bottom bar features 6 buttons: Dark Mode, Play, Zoom, Open, Search, Menu
+- Created slide-up hamburger menu with all additional controls organized in grid layout
+- Top toolbar hidden on mobile (under 600px), bottom bar shown instead
+- Mobile buttons sync with desktop controls for consistent state
+- Added safe-area-inset support for iPhone notch/home indicator
+
 **November 18, 2025**
 - Created comprehensive technical documentation (DOCUMENTATION.md)
 - Documented complete architecture, data flow, and algorithms
