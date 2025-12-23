@@ -10,7 +10,18 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@google-cloud/storage": "^7.18.0",
     "@octokit/rest": "^22.0.1",
-    "express": "^5.1.0"
+    "@uppy/aws-s3": "^5.1.0",
+    "@uppy/core": "^5.2.0",
+    "@uppy/dashboard": "^5.1.0",
+    "@uppy/react": "^5.1.1",
+    "express": "^5.1.0",
+    "file-type": "^21.1.1",
+    "google-auth-library": "^10.5.0",
+    "jszip": "^3.10.1",
+    "multer": "^2.0.2",
+    "pdf-parse": "^2.4.5",
+    "pg": "^8.16.3"
   }
 }
