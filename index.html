@@ -3184,21 +3184,25 @@ if (playBtn) {
       return;
     }
     
-    console.log('Starting playback with timeline:', musicTimeline.length, 'notes');
+    showLoading('Preparing playback...');
     
-    // Clean up any lingering oscillators before starting
-    cleanupFinishedOscillators();
-    
-    playing = true;
-    const icon = playBtn.querySelector('i');
-    if (icon) {
-      icon.classList.remove('fa-play');
-      icon.classList.add('fa-stop');
-    }
-    
-    // Get the range to play (if any selection)
-    const range = getHighlightedIndices() || getSelectionIndices();
-    let timelineToPlay = musicTimeline;
+    // Use setTimeout to allow UI to update before heavy processing
+    setTimeout(() => {
+      console.log('Starting playback with timeline:', musicTimeline.length, 'notes');
+      
+      // Clean up any lingering oscillators before starting
+      cleanupFinishedOscillators();
+      
+      playing = true;
+      const icon = playBtn.querySelector('i');
+      if (icon) {
+        icon.classList.remove('fa-play');
+        icon.classList.add('fa-stop');
+      }
+      
+      // Get the range to play (if any selection)
+      const range = getHighlightedIndices() || getSelectionIndices();
+      let timelineToPlay = musicTimeline;
     
     if (range) {
       // Filter timeline to only include notes in the selected range
@@ -3217,11 +3221,12 @@ if (playBtn) {
       }
     }
     
-    if (!timelineToPlay.length) {
-      console.warn('No notes to play after filtering');
-      stopPlayback();
-      return;
-    }
+      if (!timelineToPlay.length) {
+        console.warn('No notes to play after filtering');
+        hideLoading();
+        stopPlayback();
+        return;
+      }
     
     const baseDelay = Math.max(0.1, parseFloat(stayTimeInput.value) || 1) * 1000; // Convert to ms
     
@@ -3242,17 +3247,19 @@ if (playBtn) {
       visualDuration: note.duration * baseDelay
     }));
     
-    // Schedule all audio at once for better performance
-    scheduledNotes.forEach(note => {
-      if (soundEnabled && note.pitch) {
-        const freq = noteToFreq(note.pitch);
-        if (freq) {
-          playFreqWithDuration(freq, note.audioStartTime, note.audioDuration);
+      // Schedule all audio at once for better performance
+      scheduledNotes.forEach(note => {
+        if (soundEnabled && note.pitch) {
+          const freq = noteToFreq(note.pitch);
+          if (freq) {
+            playFreqWithDuration(freq, note.audioStartTime, note.audioDuration);
+          }
         }
-      }
-    });
-    
-    // Schedule visual highlights with robust timing
+      });
+      
+      hideLoading();
+      
+      // Schedule visual highlights with robust timing
     globalHighlightTimeouts = []; // Reset for the new playback instance
 
     scheduledNotes.forEach((note, index) => { // Add index here
