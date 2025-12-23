@@ -2961,6 +2961,10 @@ if (searchBtn) {
     renderLibraryList();
     searchTray.classList.add('open');
     searchTray.style.display = 'flex';
+    // Auto-focus search input to bring up keyboard on mobile
+    setTimeout(() => {
+      if (librarySearchInput) librarySearchInput.focus();
+    }, 100);
   });
 }
 
