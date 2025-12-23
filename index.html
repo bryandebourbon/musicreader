@@ -171,16 +171,56 @@ svg {
     left: 0;
     top: 0;
     bottom: 0;
-    width: 200px;
+    right: 0;
     background-color: var(--space-color);
-    border-right: 1px solid var(--line-color);
     padding: 10px;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
     overflow-y: auto;
     display: none;
+    flex-direction: column;
     z-index: 20;
   }
-  #searchTray button {
+  #searchTray.open {
+    display: flex;
+  }
+  #searchTray > button:first-child {
+    align-self: flex-start;
     margin-bottom: 10px;
+  }
+  #searchList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  #searchList .library-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    background: var(--space-color);
+    border: 1px solid var(--line-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  #searchList .library-item:hover {
+    background: rgba(128, 128, 128, 0.1);
+  }
+  #searchList .library-item i {
+    margin-right: 12px;
+    font-size: 1.2em;
+    color: var(--line-color);
+  }
+  #searchList .library-item-name {
+    flex: 1;
+    color: var(--line-color);
+    font-size: 1em;
+  }
+  #searchList .no-results {
+    text-align: center;
+    color: var(--line-color);
+    opacity: 0.6;
+    padding: 20px;
   }
   .controls button,
   .controls i,
@@ -910,6 +950,7 @@ svg {
 
 <div id="searchTray">
   <button id="searchBack" class="tooltip" data-tooltip="Back"><i class="fa-solid fa-arrow-left"></i></button>
+  <input type="text" id="librarySearchInput" placeholder="Search your music library..." style="flex:1; padding:10px; margin:0 10px; border:1px solid var(--line-color); background:var(--space-color); color:var(--line-color); border-radius:4px; font-size:16px;">
   <div id="searchList"></div>
 </div>
 
@@ -2814,38 +2855,70 @@ if (phraseBoxToggle) {
   });
 }
 
+function renderLibraryList(filter = '') {
+  searchList.innerHTML = '';
+  const lowerFilter = filter.toLowerCase().trim();
+  
+  // Get library from localStorage
+  const libraryData = JSON.parse(localStorage.getItem('xmlLibrary') || '[]');
+  
+  // Filter by search term
+  const filtered = libraryData.filter(item => 
+    item.name.toLowerCase().includes(lowerFilter)
+  );
+  
+  if (filtered.length === 0) {
+    const noResults = document.createElement('div');
+    noResults.className = 'no-results';
+    noResults.textContent = libraryData.length === 0 
+      ? 'No music files uploaded yet. Use Upload to add files.' 
+      : 'No matches found.';
+    searchList.appendChild(noResults);
+    return;
+  }
+  
+  filtered.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'library-item';
+    div.innerHTML = `
+      <i class="fa-solid fa-music"></i>
+      <span class="library-item-name">${item.name.replace(/^🎵\s*/, '')}</span>
+    `;
+    div.addEventListener('click', () => {
+      showLoading('Loading music...');
+      searchTray.classList.remove('open');
+      searchTray.style.display = 'none';
+      
+      // Load the file from library
+      setTimeout(() => {
+        parseAndPopulate(item.data, item.name);
+        hideLoading();
+      }, 50);
+    });
+    searchList.appendChild(div);
+  });
+}
+
+const librarySearchInput = document.getElementById('librarySearchInput');
+if (librarySearchInput) {
+  librarySearchInput.addEventListener('input', (e) => {
+    renderLibraryList(e.target.value);
+  });
+}
+
 if (searchBtn) {
   searchBtn.addEventListener('click', () => {
-    const indices = getSelectionIndices();
-    if (!indices) return;
-    const patternSteps = noteSteps.slice(indices[0], indices[1] + 1);
-    searchList.innerHTML = '';
-    openFiles.forEach(f => {
-      if (f.name === currentFile) return;
-      const idx = indexOfSubsequence(f.steps, patternSteps);
-      if (idx !== -1) {
-        const btn = document.createElement('button');
-        btn.textContent = f.name;
-        btn.addEventListener('click', () => {
-          searchTray.style.display = 'block';
-          openFileByName(f.name, [idx, idx + patternSteps.length - 1]);
-        });
-        searchList.appendChild(btn);
-      }
-    });
-    searchTray.style.display = 'block';
-    previousContext = { file: currentFile, indices };
+    if (librarySearchInput) librarySearchInput.value = '';
+    renderLibraryList();
+    searchTray.classList.add('open');
+    searchTray.style.display = 'flex';
   });
 }
 
 if (searchBackBtn) {
   searchBackBtn.addEventListener('click', () => {
+    searchTray.classList.remove('open');
     searchTray.style.display = 'none';
-    if (previousContext) {
-      const ctx = previousContext;
-      previousContext = null;
-      openFileByName(ctx.file, ctx.indices);
-    }
   });
 }
 
