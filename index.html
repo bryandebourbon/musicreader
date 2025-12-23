@@ -691,9 +691,11 @@ svg {
   border-top: 1px solid var(--line-color);
   padding: 8px 0;
   padding-bottom: calc(8px + env(safe-area-inset-bottom));
-  z-index: 100;
+  z-index: 1000;
   justify-content: space-around;
   align-items: center;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 @media (max-width: 600px) {
@@ -3421,6 +3423,17 @@ document.addEventListener('visibilitychange', () => {
     stopPlayback();
   }
 });
+
+// Handle iOS keyboard - keep bottom bar fixed at visual viewport bottom
+const bottomBar = document.querySelector('.bottom-bar');
+if (window.visualViewport && bottomBar) {
+  const updateBottomBar = () => {
+    const offsetY = window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop;
+    bottomBar.style.transform = `translateY(-${Math.max(0, offsetY)}px) translateZ(0)`;
+  };
+  window.visualViewport.addEventListener('resize', updateBottomBar);
+  window.visualViewport.addEventListener('scroll', updateBottomBar);
+}
 
 const colorSettings = [
   { css: '--space-color', id: 'spaceColor' },
