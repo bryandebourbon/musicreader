@@ -7,6 +7,12 @@ eMusicReader is a browser-based music notation reader and editor that allows use
 ## Recent Changes
 
 **December 23, 2025**
+- Added server-side file storage with validation for security
+- Files are validated before storage to prevent corrupt or malicious content:
+  - MusicXML: Validates XML structure, required elements, scans for scripts/malicious entities
+  - PDF: Validates header, scans for JavaScript, auto-actions, embedded files
+- Files stored permanently in Replit Object Storage (Google Cloud Storage)
+- Database tracks all uploads with metadata (filename, type, size, SHA256 hash, status)
 - Added mobile-friendly bottom navigation bar for iPhone/mobile devices
 - Bottom bar features 6 buttons: Dark Mode, Play, Zoom, Open, Search, Menu
 - Created slide-up hamburger menu with all additional controls organized in grid layout

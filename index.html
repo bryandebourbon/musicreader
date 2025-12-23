@@ -2075,41 +2075,79 @@ function parseAndPopulate(text, name) {
   }
 }
 
+async function uploadAndValidateFile(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  try {
+    const response = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    });
+    
+    const result = await response.json();
+    
+    if (!response.ok) {
+      const errorMsg = result.details ? result.details.join(', ') : result.error;
+      throw new Error(errorMsg);
+    }
+    
+    console.log('File validated and stored:', result.upload);
+    return result;
+  } catch (err) {
+    console.error('Upload validation failed:', err);
+    alert('File validation failed: ' + err.message);
+    throw err;
+  }
+}
+
 function loadFile(file) {
   if (!file) return;
-  if (file.name.toLowerCase().endsWith('.mxl')) {
-    JSZip.loadAsync(file).then(async zip => {
-      // Prefer XML files that live at the root of the archive
-      let xmlPath = Object.keys(zip.files).find(name => {
-        const lower = name.toLowerCase();
-        return (lower.endsWith('.xml') || lower.endsWith('.musicxml')) &&
-               !name.includes('/') && lower !== 'container.xml';
-      });
+  
+  const ext = file.name.toLowerCase().split('.').pop();
+  const isMusicFile = ['musicxml', 'mxl', 'xml'].includes(ext);
+  const isPDF = ext === 'pdf';
+  
+  if (isMusicFile || isPDF) {
+    uploadAndValidateFile(file).then(() => {
+      if (file.name.toLowerCase().endsWith('.mxl')) {
+        JSZip.loadAsync(file).then(async zip => {
+          let xmlPath = Object.keys(zip.files).find(name => {
+            const lower = name.toLowerCase();
+            return (lower.endsWith('.xml') || lower.endsWith('.musicxml')) &&
+                   !name.includes('/') && lower !== 'container.xml';
+          });
 
-      // Fallback: look for META-INF/container.xml to resolve packaged path
-      if (!xmlPath) {
-        const container = zip.file(/META-INF\/container\.xml/i);
-        if (container && container.length) {
-          const containerXML = await container[0].async('string');
-          const doc = new DOMParser().parseFromString(containerXML, 'text/xml');
-          const rootfile = doc.querySelector('rootfile');
-          if (rootfile) xmlPath = rootfile.getAttribute('full-path');
-        }
+          if (!xmlPath) {
+            const container = zip.file(/META-INF\/container\.xml/i);
+            if (container && container.length) {
+              const containerXML = await container[0].async('string');
+              const doc = new DOMParser().parseFromString(containerXML, 'text/xml');
+              const rootfile = doc.querySelector('rootfile');
+              if (rootfile) xmlPath = rootfile.getAttribute('full-path');
+            }
+          }
+
+          if (!xmlPath) {
+            xmlPath = Object.keys(zip.files).find(n => n.toLowerCase().endsWith('.xml') || n.toLowerCase().endsWith('.musicxml'));
+          }
+
+          if (!xmlPath) throw new Error('No XML file found in archive');
+          return zip.file(xmlPath).async('string');
+        }).then(text => parseAndPopulate(text, file.name))
+          .catch(err => console.error('Error loading MXL file:', err));
+      } else if (isPDF) {
+        alert('PDF files are stored but cannot be displayed as sheet music. Please upload MusicXML files for notation display.');
+      } else {
+        const reader = new FileReader();
+        reader.onload = () => parseAndPopulate(reader.result, file.name);
+        reader.readAsText(file);
       }
-
-      // Final fallback: any XML anywhere in the archive
-      if (!xmlPath) {
-        xmlPath = Object.keys(zip.files).find(n => n.toLowerCase().endsWith('.xml') || n.toLowerCase().endsWith('.musicxml'));
-      }
-
-      if (!xmlPath) throw new Error('No XML file found in archive');
-      return zip.file(xmlPath).async('string');
-    }).then(text => parseAndPopulate(text, file.name))
-      .catch(err => console.error('Error loading MXL file:', err));
+    }).catch(err => {
+      console.error('File rejected:', err);
+    });
   } else {
-    const reader = new FileReader();
-    reader.onload = () => parseAndPopulate(reader.result, file.name);
-    reader.readAsText(file);
+    alert('Unsupported file type. Please upload MusicXML (.musicxml, .mxl, .xml) or PDF files.');
   }
 }
 
