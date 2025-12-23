@@ -797,6 +797,45 @@ svg {
     border-radius: 50px 50px 50px 50px;
 } */
 
+/* Loading indicator */
+.loading-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 10000;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.loading-overlay.active {
+  display: flex;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top: 4px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loading-text {
+  color: white;
+  margin-top: 16px;
+  font-size: 1.1em;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 </style>
 <script src="jszip.min.js"></script>
 </head>
@@ -811,6 +850,12 @@ svg {
 ######################################
 -->
 <body onload="init();" style="touch-action: pan-y; overscroll-behavior: contain;" >
+
+<div id="loadingOverlay" class="loading-overlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">Loading...</div>
+</div>
+
 <div class="controls">
   <input
     id="xmlInput"
@@ -2164,6 +2209,18 @@ function parseAndPopulate(text, name) {
   }
 }
 
+function showLoading(message = 'Loading...') {
+  const overlay = document.getElementById('loadingOverlay');
+  const text = overlay.querySelector('.loading-text');
+  if (text) text.textContent = message;
+  overlay.classList.add('active');
+}
+
+function hideLoading() {
+  const overlay = document.getElementById('loadingOverlay');
+  overlay.classList.remove('active');
+}
+
 async function uploadAndValidateFile(file) {
   const formData = new FormData();
   formData.append('file', file);
@@ -2198,7 +2255,9 @@ function loadFile(file) {
   const isPDF = ext === 'pdf';
   
   if (isMusicFile || isPDF) {
+    showLoading('Uploading file...');
     uploadAndValidateFile(file).then(() => {
+      showLoading('Processing music...');
       if (file.name.toLowerCase().endsWith('.mxl')) {
         JSZip.loadAsync(file).then(async zip => {
           let xmlPath = Object.keys(zip.files).find(name => {
@@ -2223,17 +2282,28 @@ function loadFile(file) {
 
           if (!xmlPath) throw new Error('No XML file found in archive');
           return zip.file(xmlPath).async('string');
-        }).then(text => parseAndPopulate(text, file.name))
-          .catch(err => console.error('Error loading MXL file:', err));
+        }).then(text => {
+          parseAndPopulate(text, file.name);
+          hideLoading();
+        }).catch(err => {
+          console.error('Error loading MXL file:', err);
+          hideLoading();
+        });
       } else if (isPDF) {
+        hideLoading();
         alert('PDF files are stored but cannot be displayed as sheet music. Please upload MusicXML files for notation display.');
       } else {
         const reader = new FileReader();
-        reader.onload = () => parseAndPopulate(reader.result, file.name);
+        reader.onload = () => {
+          parseAndPopulate(reader.result, file.name);
+          hideLoading();
+        };
+        reader.onerror = () => hideLoading();
         reader.readAsText(file);
       }
     }).catch(err => {
       console.error('File rejected:', err);
+      hideLoading();
     });
   } else {
     alert('Unsupported file type. Please upload MusicXML (.musicxml, .mxl, .xml) or PDF files.');
