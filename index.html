@@ -3248,7 +3248,7 @@ function playFreqWithDuration(freq, startTime, duration) {
 if (playBtn) {
   playBtn.addEventListener('click', () => {
     if (playing) {
-      stopPlayback(); // This will now also clear visual timeouts
+      stopPlayback();
       return;
     }
     
@@ -3259,11 +3259,8 @@ if (playBtn) {
     
     showLoading('Preparing playback...');
     
-    // Use setTimeout to allow UI to update before heavy processing
     setTimeout(() => {
       console.log('Starting playback with timeline:', musicTimeline.length, 'notes');
-      
-      // Clean up any lingering oscillators before starting
       cleanupFinishedOscillators();
       
       playing = true;
@@ -3273,54 +3270,46 @@ if (playBtn) {
         icon.classList.add('fa-stop');
       }
       
-      // Get the range to play (if any selection)
       const range = getHighlightedIndices() || getSelectionIndices();
       let timelineToPlay = musicTimeline;
-    
-    if (range) {
-      // Filter timeline to only include notes in the selected range
-      const selectedNoteElements = noteElements.slice(range[0], range[1] + 1);
-      const selectedStaffs = new Set(selectedNoteElements.map(n => n.closest('.staff')));
-      timelineToPlay = musicTimeline.filter(note => selectedStaffs.has(note.staffElement));
-      console.log('Playing selected range:', range, 'filtered to', timelineToPlay.length, 'notes');
       
-      // Adjust timeline to start from 0 for selected portion
-      if (timelineToPlay.length > 0) {
-        const minTime = Math.min(...timelineToPlay.map(note => note.globalTime));
-        timelineToPlay = timelineToPlay.map(note => ({
-          ...note,
-          globalTime: note.globalTime - minTime
-        }));
+      if (range) {
+        const selectedNoteElements = noteElements.slice(range[0], range[1] + 1);
+        const selectedStaffs = new Set(selectedNoteElements.map(n => n.closest('.staff')));
+        timelineToPlay = musicTimeline.filter(note => selectedStaffs.has(note.staffElement));
+        console.log('Playing selected range:', range, 'filtered to', timelineToPlay.length, 'notes');
+        
+        if (timelineToPlay.length > 0) {
+          const minTime = Math.min(...timelineToPlay.map(note => note.globalTime));
+          timelineToPlay = timelineToPlay.map(note => ({
+            ...note,
+            globalTime: note.globalTime - minTime
+          }));
+        }
       }
-    }
-    
+      
       if (!timelineToPlay.length) {
         console.warn('No notes to play after filtering');
         hideLoading();
         stopPlayback();
         return;
       }
-    
-    const baseDelay = Math.max(0.1, parseFloat(stayTimeInput.value) || 1) * 1000; // Convert to ms
-    
-    // Initialize audio context
-    const audioCtx = getAudioContext();
-    if (audioCtx.state === 'suspended') {
-      audioCtx.resume();
-    }
-    
-    const startTime = audioCtx.currentTime + 0.1;
-    
-    // Pre-calculate all timing to reduce scheduling overhead
-    const scheduledNotes = timelineToPlay.map(note => ({
-      ...note,
-      audioStartTime: startTime + (note.globalTime * baseDelay / 1000),
-      audioDuration: note.duration * baseDelay / 1000,
-      visualStartTime: note.globalTime * baseDelay,
-      visualDuration: note.duration * baseDelay
-    }));
-    
-      // Schedule all audio at once for better performance
+      
+      const baseDelay = Math.max(0.1, parseFloat(stayTimeInput.value) || 1) * 1000;
+      const audioCtx = getAudioContext();
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      
+      const startTime = audioCtx.currentTime + 0.1;
+      const scheduledNotes = timelineToPlay.map(note => ({
+        ...note,
+        audioStartTime: startTime + (note.globalTime * baseDelay / 1000),
+        audioDuration: note.duration * baseDelay / 1000,
+        visualStartTime: note.globalTime * baseDelay,
+        visualDuration: note.duration * baseDelay
+      }));
+      
       scheduledNotes.forEach(note => {
         if (soundEnabled && note.pitch) {
           const freq = noteToFreq(note.pitch);
@@ -3332,54 +3321,39 @@ if (playBtn) {
       
       hideLoading();
       
-      // Schedule visual highlights with robust timing
-    globalHighlightTimeouts = []; // Reset for the new playback instance
-
-    scheduledNotes.forEach((note, index) => { // Add index here
-      // Schedule highlight start
-      const startTimeoutId = setTimeout(() => {
-        if (!playing) return;
-
-        document.querySelectorAll('.staff.playing').forEach(el => el.classList.remove('playing'));
-        
-        note.staffElement.classList.add('playing');
-        
-        // Revised Scroll logic
-        if (range && index === 0) { // Playing a selection, and it's the first note of the selection
-          note.staffElement.scrollIntoView({behavior:'smooth', block:'center'});
-        } else if (!range) { // Playing the whole piece
-          note.staffElement.scrollIntoView({behavior:'smooth', block:'center'});
-        }
-        // For a selection, subsequent notes (index > 0) will not scroll
-
-        // Schedule highlight end
-        const endTimeoutId = setTimeout(() => {
-          if (playing) { 
-            note.staffElement.classList.remove('playing');
+      globalHighlightTimeouts = [];
+      scheduledNotes.forEach((note, index) => {
+        const startTimeoutId = setTimeout(() => {
+          if (!playing) return;
+          document.querySelectorAll('.staff.playing').forEach(el => el.classList.remove('playing'));
+          note.staffElement.classList.add('playing');
+          if (range && index === 0) {
+            note.staffElement.scrollIntoView({behavior:'smooth', block:'center'});
+          } else if (!range) {
+            note.staffElement.scrollIntoView({behavior:'smooth', block:'center'});
           }
-        }, note.visualDuration);
-        globalHighlightTimeouts.push(endTimeoutId);
-
-      }, note.visualStartTime);
-      globalHighlightTimeouts.push(startTimeoutId);
-    });
-    
-    // Schedule periodic cleanup during playback
-    const cleanupInterval = setInterval(() => {
-      if (!playing) {
+          const endTimeoutId = setTimeout(() => {
+            if (playing) note.staffElement.classList.remove('playing');
+          }, note.visualDuration);
+          globalHighlightTimeouts.push(endTimeoutId);
+        }, note.visualStartTime);
+        globalHighlightTimeouts.push(startTimeoutId);
+      });
+      
+      const cleanupInterval = setInterval(() => {
+        if (!playing) {
+          clearInterval(cleanupInterval);
+          return;
+        }
+        cleanupFinishedOscillators();
+      }, 1000);
+      
+      const totalDuration = Math.max(...scheduledNotes.map(note => note.globalTime + note.duration)) * baseDelay;
+      playTimeoutId = setTimeout(() => {
         clearInterval(cleanupInterval);
-        return;
-      }
-      cleanupFinishedOscillators();
-    }, 1000); // Clean up every second
-    
-    // Schedule playback end
-    const totalDuration = Math.max(...scheduledNotes.map(note => note.globalTime + note.duration)) * baseDelay;
-    
-    playTimeoutId = setTimeout(() => {
-      clearInterval(cleanupInterval);
-      stopPlayback();
-    }, totalDuration + 500); // Reduced buffer for faster response
+        stopPlayback();
+      }, totalDuration + 500);
+    }, 50);
   });
 }
 
