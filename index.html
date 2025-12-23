@@ -3792,12 +3792,30 @@ document.addEventListener('visibilitychange', () => {
 const bottomBar = document.querySelector('.bottom-bar');
 if (window.visualViewport && bottomBar) {
   const updateBottomBar = () => {
-    const offsetY = window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop;
-    bottomBar.style.transform = `translateY(-${Math.max(0, offsetY)}px) translateZ(0)`;
+    const viewport = window.visualViewport;
+    const bottomOffset = window.innerHeight - viewport.height - viewport.offsetTop;
+    bottomBar.style.bottom = `${Math.max(0, bottomOffset)}px`;
   };
   window.visualViewport.addEventListener('resize', updateBottomBar);
   window.visualViewport.addEventListener('scroll', updateBottomBar);
+  updateBottomBar();
 }
+
+// Fallback for browsers without visualViewport
+window.addEventListener('resize', () => {
+  if (bottomBar && !window.visualViewport) {
+    bottomBar.style.bottom = '0px';
+  }
+});
+
+// Handle scroll to keep bottom bar visible
+let lastScrollY = 0;
+window.addEventListener('scroll', () => {
+  if (bottomBar) {
+    bottomBar.style.position = 'fixed';
+    bottomBar.style.bottom = bottomBar.style.bottom || '0px';
+  }
+}, { passive: true });
 
 const colorSettings = [
   { css: '--space-color', id: 'spaceColor' },
