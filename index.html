@@ -815,6 +815,7 @@ svg {
   <input
     id="xmlInput"
     type="file"
+    accept=".xml,.musicxml,.mxl,.pdf"
     onchange="fileHandler(event)"
     style="display:none"/>
   <button id="openFileBtn" class="tooltip" data-tooltip="Open File"><i class="fa-solid fa-plus"></i></button>
@@ -3625,9 +3626,17 @@ if (mobileZoomBtn && zoomPicker) {
 
 const mobileOpenFile = document.getElementById('mobileOpenFile');
 if (mobileOpenFile) {
-  mobileOpenFile.addEventListener('click', () => {
+  mobileOpenFile.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('Mobile upload button clicked');
     const xmlInput = document.getElementById('xmlInput');
-    if (xmlInput) xmlInput.click();
+    if (xmlInput) {
+      console.log('Triggering file input click');
+      xmlInput.click();
+    } else {
+      console.error('xmlInput not found');
+    }
   });
 }
 
