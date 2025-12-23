@@ -7,6 +7,22 @@ eMusicReader is a browser-based music notation reader and editor that allows use
 ## Recent Changes
 
 **December 23, 2025**
+- Added first-run onboarding experience with friendly 5-step tutorial:
+  - Step 1: Welcome and feature overview
+  - Step 2: How to upload music files
+  - Step 3: Playback and navigation controls
+  - Step 4: AI-powered features explanation
+  - Step 5: Library and search features
+- Implemented custom telemetry system for user behavior tracking:
+  - Tracks page views, button clicks, and feature usage
+  - Monitors onboarding funnel progression
+  - Session management with localStorage fallback
+- Created admin analytics dashboard at `/admin.html`:
+  - Shows total sessions, onboarding completion rate
+  - Displays user funnel through onboarding steps
+  - Lists top events and most clicked buttons
+  - Shows daily activity over last 30 days
+- New database tables: `telemetry_events` and `user_sessions`
 - Added zoom level picker: tap Zoom button to see 200%, 150%, 100%, 50% options
 - Zoom picker syncs with desktop zoom controls and pinch gestures
 - Added server-side file storage with validation for security

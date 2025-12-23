@@ -362,6 +362,136 @@ app.get('/api/uploads/:id/download', async (req, res) => {
   }
 });
 
+// Telemetry endpoints
+app.post('/api/telemetry/event', async (req, res) => {
+  try {
+    const { sessionId, eventType, eventData, page } = req.body;
+    
+    if (!sessionId || !eventType) {
+      return res.status(400).json({ error: 'sessionId and eventType are required' });
+    }
+    
+    await pool.query(`
+      INSERT INTO telemetry_events (session_id, event_type, event_data, page)
+      VALUES ($1, $2, $3, $4)
+    `, [sessionId, eventType, JSON.stringify(eventData || {}), page || null]);
+    
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Telemetry error:', err);
+    res.status(500).json({ error: 'Failed to record event' });
+  }
+});
+
+app.post('/api/telemetry/session', async (req, res) => {
+  try {
+    const { sessionId } = req.body;
+    
+    if (!sessionId) {
+      return res.status(400).json({ error: 'sessionId is required' });
+    }
+    
+    const result = await pool.query(`
+      INSERT INTO user_sessions (session_id)
+      VALUES ($1)
+      ON CONFLICT (session_id) DO UPDATE SET last_seen_at = NOW()
+      RETURNING is_first_visit, onboarding_completed, onboarding_step
+    `, [sessionId]);
+    
+    const session = result.rows[0];
+    
+    if (session.is_first_visit) {
+      await pool.query(`UPDATE user_sessions SET is_first_visit = false WHERE session_id = $1`, [sessionId]);
+    }
+    
+    res.json({ 
+      isFirstVisit: session.is_first_visit,
+      onboardingCompleted: session.onboarding_completed,
+      onboardingStep: session.onboarding_step
+    });
+  } catch (err) {
+    console.error('Session error:', err);
+    res.status(500).json({ error: 'Failed to get session' });
+  }
+});
+
+app.post('/api/telemetry/onboarding', async (req, res) => {
+  try {
+    const { sessionId, step, completed } = req.body;
+    
+    if (!sessionId) {
+      return res.status(400).json({ error: 'sessionId is required' });
+    }
+    
+    await pool.query(`
+      UPDATE user_sessions 
+      SET onboarding_step = COALESCE($2, onboarding_step),
+          onboarding_completed = COALESCE($3, onboarding_completed),
+          last_seen_at = NOW()
+      WHERE session_id = $1
+    `, [sessionId, step, completed]);
+    
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Onboarding error:', err);
+    res.status(500).json({ error: 'Failed to update onboarding' });
+  }
+});
+
+// Admin dashboard endpoint - funnel analytics
+app.get('/api/admin/funnel', async (req, res) => {
+  try {
+    const totalSessions = await pool.query(`SELECT COUNT(*) as count FROM user_sessions`);
+    
+    const onboardingCompleted = await pool.query(`
+      SELECT COUNT(*) as count FROM user_sessions WHERE onboarding_completed = true
+    `);
+    
+    const onboardingSteps = await pool.query(`
+      SELECT onboarding_step, COUNT(*) as count 
+      FROM user_sessions 
+      GROUP BY onboarding_step 
+      ORDER BY onboarding_step
+    `);
+    
+    const eventCounts = await pool.query(`
+      SELECT event_type, COUNT(*) as count 
+      FROM telemetry_events 
+      GROUP BY event_type 
+      ORDER BY count DESC
+      LIMIT 20
+    `);
+    
+    const dailyActivity = await pool.query(`
+      SELECT DATE(created_at) as date, COUNT(DISTINCT session_id) as sessions, COUNT(*) as events
+      FROM telemetry_events
+      WHERE created_at > NOW() - INTERVAL '30 days'
+      GROUP BY DATE(created_at)
+      ORDER BY date DESC
+    `);
+    
+    const buttonClicks = await pool.query(`
+      SELECT event_data->>'buttonId' as button, COUNT(*) as count
+      FROM telemetry_events
+      WHERE event_type = 'button_click' AND event_data->>'buttonId' IS NOT NULL
+      GROUP BY event_data->>'buttonId'
+      ORDER BY count DESC
+    `);
+    
+    res.json({
+      totalSessions: parseInt(totalSessions.rows[0].count),
+      onboardingCompleted: parseInt(onboardingCompleted.rows[0].count),
+      onboardingSteps: onboardingSteps.rows,
+      eventCounts: eventCounts.rows,
+      dailyActivity: dailyActivity.rows,
+      buttonClicks: buttonClicks.rows
+    });
+  } catch (err) {
+    console.error('Funnel error:', err);
+    res.status(500).json({ error: 'Failed to get funnel data' });
+  }
+});
+
 app.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {

@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analytics Dashboard - eMusicReader</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-card: #334155;
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --accent-purple: #8b5cf6;
+      --accent-blue: #3b82f6;
+      --accent-green: #22c55e;
+      --accent-orange: #f59e0b;
+      --accent-red: #ef4444;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 32px;
+    }
+
+    .header h1 {
+      font-size: 1.8em;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header h1 i {
+      color: var(--accent-purple);
+    }
+
+    .refresh-btn {
+      background: var(--accent-purple);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.95em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .refresh-btn:hover {
+      background: #7c3aed;
+      transform: translateY(-1px);
+    }
+
+    .refresh-btn.loading i {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: var(--bg-secondary);
+      padding: 24px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .stat-card .label {
+      font-size: 0.85em;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-card .value {
+      font-size: 2.2em;
+      font-weight: 700;
+    }
+
+    .stat-card .icon {
+      float: right;
+      font-size: 2em;
+      opacity: 0.3;
+    }
+
+    .stat-card.purple .value { color: var(--accent-purple); }
+    .stat-card.blue .value { color: var(--accent-blue); }
+    .stat-card.green .value { color: var(--accent-green); }
+    .stat-card.orange .value { color: var(--accent-orange); }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+
+    .card {
+      background: var(--bg-secondary);
+      border-radius: 16px;
+      padding: 24px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .card h3 {
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.1em;
+    }
+
+    .card h3 i {
+      color: var(--accent-purple);
+    }
+
+    .funnel-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .funnel-step {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .funnel-bar-container {
+      flex: 1;
+      background: var(--bg-card);
+      border-radius: 8px;
+      height: 40px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .funnel-bar {
+      height: 100%;
+      border-radius: 8px;
+      background: linear-gradient(90deg, var(--accent-purple), var(--accent-blue));
+      transition: width 0.5s ease;
+      display: flex;
+      align-items: center;
+      padding-left: 16px;
+      font-weight: 600;
+      font-size: 0.9em;
+      min-width: 60px;
+    }
+
+    .funnel-label {
+      min-width: 140px;
+      font-size: 0.9em;
+      color: var(--text-secondary);
+    }
+
+    .funnel-count {
+      min-width: 50px;
+      text-align: right;
+      font-weight: 600;
+    }
+
+    .event-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .event-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: var(--bg-card);
+      border-radius: 8px;
+    }
+
+    .event-item .name {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .event-item .name i {
+      color: var(--accent-blue);
+    }
+
+    .event-item .count {
+      background: var(--accent-purple);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.85em;
+      font-weight: 600;
+    }
+
+    .button-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .button-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      background: var(--bg-card);
+      border-radius: 8px;
+    }
+
+    .button-item .bar {
+      flex: 1;
+      height: 8px;
+      background: var(--bg-primary);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .button-item .bar-fill {
+      height: 100%;
+      background: var(--accent-green);
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+
+    .button-item .name {
+      min-width: 120px;
+      font-size: 0.9em;
+    }
+
+    .button-item .count {
+      min-width: 40px;
+      text-align: right;
+      color: var(--text-secondary);
+      font-size: 0.9em;
+    }
+
+    .activity-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .activity-table th,
+    .activity-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .activity-table th {
+      color: var(--text-secondary);
+      font-weight: 500;
+      font-size: 0.85em;
+      text-transform: uppercase;
+    }
+
+    .activity-table tbody tr:hover {
+      background: var(--bg-card);
+    }
+
+    .loading-state {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 60px;
+      color: var(--text-secondary);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-secondary);
+    }
+
+    .empty-state i {
+      font-size: 3em;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    .back-link {
+      color: var(--accent-purple);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 20px;
+      font-size: 0.95em;
+    }
+
+    .back-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <a href="/" class="back-link"><i class="fa-solid fa-arrow-left"></i> Back to eMusicReader</a>
+  
+  <div class="header">
+    <h1><i class="fa-solid fa-chart-line"></i> Analytics Dashboard</h1>
+    <button class="refresh-btn" onclick="loadData()">
+      <i class="fa-solid fa-arrows-rotate"></i> Refresh
+    </button>
+  </div>
+
+  <div id="content">
+    <div class="loading-state">
+      <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+    </div>
+  </div>
+
+  <script>
+    async function loadData() {
+      const refreshBtn = document.querySelector('.refresh-btn');
+      refreshBtn.classList.add('loading');
+      
+      try {
+        const response = await fetch('/api/admin/funnel');
+        const data = await response.json();
+        renderDashboard(data);
+      } catch (err) {
+        document.getElementById('content').innerHTML = `
+          <div class="empty-state">
+            <i class="fa-solid fa-exclamation-triangle"></i>
+            <p>Failed to load analytics data</p>
+          </div>
+        `;
+      } finally {
+        refreshBtn.classList.remove('loading');
+      }
+    }
+
+    function renderDashboard(data) {
+      const completionRate = data.totalSessions > 0 
+        ? Math.round((data.onboardingCompleted / data.totalSessions) * 100) 
+        : 0;
+      
+      const totalEvents = data.eventCounts.reduce((sum, e) => sum + parseInt(e.count), 0);
+      const uniqueButtons = data.buttonClicks.length;
+      
+      const onboardingStepLabels = [
+        'Welcome',
+        'Upload Files',
+        'Play & Navigate',
+        'AI Features',
+        'Completed'
+      ];
+      
+      const maxOnboardingCount = Math.max(...data.onboardingSteps.map(s => parseInt(s.count)), 1);
+      
+      let funnelHTML = data.onboardingSteps.map(step => {
+        const percentage = (parseInt(step.count) / maxOnboardingCount) * 100;
+        const label = onboardingStepLabels[step.onboarding_step] || `Step ${step.onboarding_step}`;
+        return `
+          <div class="funnel-step">
+            <span class="funnel-label">${label}</span>
+            <div class="funnel-bar-container">
+              <div class="funnel-bar" style="width: ${percentage}%">${Math.round(percentage)}%</div>
+            </div>
+            <span class="funnel-count">${step.count}</span>
+          </div>
+        `;
+      }).join('');
+
+      if (data.onboardingSteps.length === 0) {
+        funnelHTML = '<div class="empty-state"><i class="fa-solid fa-chart-simple"></i><p>No onboarding data yet</p></div>';
+      }
+      
+      let eventsHTML = data.eventCounts.map(event => `
+        <div class="event-item">
+          <div class="name"><i class="fa-solid fa-bolt"></i> ${event.event_type.replace(/_/g, ' ')}</div>
+          <span class="count">${event.count}</span>
+        </div>
+      `).join('');
+
+      if (data.eventCounts.length === 0) {
+        eventsHTML = '<div class="empty-state"><i class="fa-solid fa-inbox"></i><p>No events recorded yet</p></div>';
+      }
+      
+      const maxButtonCount = Math.max(...data.buttonClicks.map(b => parseInt(b.count)), 1);
+      let buttonsHTML = data.buttonClicks.map(btn => {
+        const percentage = (parseInt(btn.count) / maxButtonCount) * 100;
+        return `
+          <div class="button-item">
+            <span class="name">${btn.button ? btn.button.replace(/_/g, ' ') : 'unknown'}</span>
+            <div class="bar"><div class="bar-fill" style="width: ${percentage}%"></div></div>
+            <span class="count">${btn.count}</span>
+          </div>
+        `;
+      }).join('');
+
+      if (data.buttonClicks.length === 0) {
+        buttonsHTML = '<div class="empty-state"><i class="fa-solid fa-hand-pointer"></i><p>No button clicks yet</p></div>';
+      }
+      
+      let activityHTML = data.dailyActivity.map(day => `
+        <tr>
+          <td>${new Date(day.date).toLocaleDateString()}</td>
+          <td>${day.sessions}</td>
+          <td>${day.events}</td>
+        </tr>
+      `).join('');
+
+      if (data.dailyActivity.length === 0) {
+        activityHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-secondary);">No activity data yet</td></tr>';
+      }
+
+      document.getElementById('content').innerHTML = `
+        <div class="stats-grid">
+          <div class="stat-card purple">
+            <i class="fa-solid fa-users icon"></i>
+            <div class="label">Total Sessions</div>
+            <div class="value">${data.totalSessions}</div>
+          </div>
+          <div class="stat-card green">
+            <i class="fa-solid fa-graduation-cap icon"></i>
+            <div class="label">Onboarding Completed</div>
+            <div class="value">${data.onboardingCompleted}</div>
+          </div>
+          <div class="stat-card blue">
+            <i class="fa-solid fa-percent icon"></i>
+            <div class="label">Completion Rate</div>
+            <div class="value">${completionRate}%</div>
+          </div>
+          <div class="stat-card orange">
+            <i class="fa-solid fa-bolt icon"></i>
+            <div class="label">Total Events</div>
+            <div class="value">${totalEvents}</div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3><i class="fa-solid fa-filter"></i> Onboarding Funnel</h3>
+            <div class="funnel-container">${funnelHTML}</div>
+          </div>
+          <div class="card">
+            <h3><i class="fa-solid fa-list"></i> Top Events</h3>
+            <div class="event-list">${eventsHTML}</div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3><i class="fa-solid fa-hand-pointer"></i> Button Clicks</h3>
+            <div class="button-list">${buttonsHTML}</div>
+          </div>
+          <div class="card">
+            <h3><i class="fa-solid fa-calendar"></i> Daily Activity (Last 30 Days)</h3>
+            <table class="activity-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Sessions</th>
+                  <th>Events</th>
+                </tr>
+              </thead>
+              <tbody>${activityHTML}</tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    loadData();
+    setInterval(loadData, 60000);
+  </script>
+</body>
+</html>

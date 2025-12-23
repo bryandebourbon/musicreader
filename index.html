@@ -811,10 +811,12 @@ svg {
   border-top-left-radius: 16px;
   border-top-right-radius: 16px;
   padding: 20px;
+  padding-top: calc(20px + env(safe-area-inset-top));
   padding-bottom: calc(20px + env(safe-area-inset-bottom));
   z-index: 101;
   transition: bottom 0.3s ease;
-  max-height: 70vh;
+  height: 100%;
+  max-height: 100vh;
   overflow-y: auto;
 }
 
@@ -929,6 +931,241 @@ svg {
   100% { transform: rotate(360deg); }
 }
 
+/* Onboarding Overlay Styles */
+.onboarding-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 20000;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.onboarding-overlay.active {
+  display: flex;
+}
+
+.onboarding-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 24px;
+  padding: 40px 32px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  color: white;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.onboarding-icon {
+  font-size: 4em;
+  margin-bottom: 20px;
+  animation: bounce 1s ease infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.onboarding-title {
+  font-size: 1.8em;
+  font-weight: 700;
+  margin: 0 0 12px 0;
+}
+
+.onboarding-text {
+  font-size: 1.1em;
+  line-height: 1.6;
+  margin: 0 0 28px 0;
+  opacity: 0.95;
+}
+
+.onboarding-button-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.onboarding-highlight {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 8px 16px;
+  border-radius: 20px;
+  margin: 4px;
+  font-size: 0.95em;
+}
+
+.onboarding-highlight i {
+  font-size: 1.1em;
+}
+
+.onboarding-features {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.onboarding-btn {
+  padding: 14px 28px;
+  border: none;
+  border-radius: 30px;
+  font-size: 1.1em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.onboarding-btn-primary {
+  background: white;
+  color: #667eea;
+}
+
+.onboarding-btn-primary:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.onboarding-btn-secondary {
+  background: transparent;
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.onboarding-btn-secondary:hover {
+  border-color: white;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.onboarding-progress {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.onboarding-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+.onboarding-dot.active {
+  background: white;
+  transform: scale(1.2);
+}
+
+.onboarding-spotlight {
+  position: fixed;
+  z-index: 19999;
+  pointer-events: none;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.8);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.onboarding-tooltip {
+  position: fixed;
+  z-index: 20001;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px 24px;
+  border-radius: 16px;
+  max-width: 320px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.onboarding-tooltip h4 {
+  margin: 0 0 8px 0;
+  font-size: 1.2em;
+}
+
+.onboarding-tooltip p {
+  margin: 0 0 16px 0;
+  font-size: 0.95em;
+  opacity: 0.95;
+  line-height: 1.5;
+}
+
+.onboarding-tooltip-btns {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.onboarding-tooltip-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 20px;
+  font-size: 0.9em;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.top-right-buttons {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 15;
+  display: flex;
+  gap: 8px;
+}
+
+.help-button,
+.top-menu-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 1.1em;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.help-button:hover,
+.top-menu-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+}
+
+.top-menu-button {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .top-menu-button {
+    display: flex;
+  }
+}
+
 </style>
 <script src="jszip.min.js"></script>
 </head>
@@ -947,6 +1184,135 @@ svg {
 <div id="loadingOverlay" class="loading-overlay">
   <div class="loading-spinner"></div>
   <div class="loading-text">Loading...</div>
+</div>
+
+<!-- Top Right Buttons -->
+<div class="top-right-buttons">
+  <button id="topMenuBtn" class="top-menu-button" title="Menu">
+    <i class="fa-solid fa-bars"></i>
+  </button>
+  <button id="helpButton" class="help-button" title="How to use this app">
+    <i class="fa-solid fa-question"></i>
+  </button>
+</div>
+
+<!-- Onboarding Overlay -->
+<div id="onboardingOverlay" class="onboarding-overlay">
+  <div class="onboarding-card" id="onboardingCard">
+    <!-- Step 0: Welcome -->
+    <div class="onboarding-step" data-step="0">
+      <div class="onboarding-icon"><i class="fa-solid fa-music"></i></div>
+      <h2 class="onboarding-title">Welcome to eMusicReader!</h2>
+      <p class="onboarding-text">Your friendly companion for reading, playing, and exploring sheet music. Whether you're a beginner or a pro, we've got you covered!</p>
+      <div class="onboarding-features">
+        <span class="onboarding-highlight"><i class="fa-solid fa-file-import"></i> Import Music</span>
+        <span class="onboarding-highlight"><i class="fa-solid fa-play"></i> Playback</span>
+        <span class="onboarding-highlight"><i class="fa-solid fa-brain"></i> AI Analysis</span>
+      </div>
+      <div class="onboarding-button-group">
+        <button class="onboarding-btn onboarding-btn-primary" onclick="onboardingNext()">Show Me Around</button>
+        <button class="onboarding-btn onboarding-btn-secondary" onclick="onboardingSkip()">I'll Explore on My Own</button>
+      </div>
+      <div class="onboarding-progress">
+        <span class="onboarding-dot active"></span>
+        <span class="onboarding-dot"></span>
+        <span class="onboarding-dot"></span>
+        <span class="onboarding-dot"></span>
+        <span class="onboarding-dot"></span>
+      </div>
+    </div>
+
+    <!-- Step 1: Open/Upload Files -->
+    <div class="onboarding-step" data-step="1" style="display:none;">
+      <div class="onboarding-icon"><i class="fa-solid fa-upload"></i></div>
+      <h2 class="onboarding-title">Upload Your Music</h2>
+      <p class="onboarding-text">Start by uploading a MusicXML file! You can drag and drop it onto the page, or tap the <strong>Upload</strong> button. We support .musicxml and .mxl files.</p>
+      <div class="onboarding-features">
+        <span class="onboarding-highlight"><i class="fa-solid fa-plus"></i> Open File</span>
+        <span class="onboarding-highlight"><i class="fa-solid fa-upload"></i> Upload</span>
+      </div>
+      <div class="onboarding-button-group">
+        <button class="onboarding-btn onboarding-btn-primary" onclick="onboardingNext()">Got It!</button>
+        <button class="onboarding-btn onboarding-btn-secondary" onclick="onboardingPrev()">Back</button>
+      </div>
+      <div class="onboarding-progress">
+        <span class="onboarding-dot"></span>
+        <span class="onboarding-dot active"></span>
+        <span class="onboarding-dot"></span>
+        <span class="onboarding-dot"></span>
+        <span class="onboarding-dot"></span>
+      </div>
+    </div>
+
+    <!-- Step 2: Playback & Controls -->
+    <div class="onboarding-step" data-step="2" style="display:none;">
+      <div class="onboarding-icon"><i class="fa-solid fa-play-circle"></i></div>
+      <h2 class="onboarding-title">Play & Navigate</h2>
+      <p class="onboarding-text">Once your music is loaded, tap <strong>Play</strong> to hear it! Use the <strong>Zoom</strong> buttons to adjust the view, and arrows to turn pages.</p>
+      <div class="onboarding-features">
+        <span class="onboarding-highlight"><i class="fa-solid fa-play"></i> Play</span>
+        <span class="onboarding-highlight"><i class="fa-solid fa-magnifying-glass"></i> Zoom</span>
+        <span class="onboarding-highlight"><i class="fa-solid fa-moon"></i> Dark Mode</span>
+      </div>
+      <div class="onboarding-button-group">
+        <button class="onboarding-btn onboarding-btn-primary" onclick="onboardingNext()">Awesome!</button>
+        <button class="onboarding-btn onboarding-btn-secondary" onclick="onboardingPrev()">Back</button>
+      </div>
+      <div class="onboarding-progress">
+        <span class="onboarding-dot"></span>
+        <span class="onboarding-dot"></span>
+        <span class="onboarding-dot active"></span>
+        <span class="onboarding-dot"></span>
+        <span class="onboarding-dot"></span>
+      </div>
+    </div>
+
+    <!-- Step 3: AI Features -->
+    <div class="onboarding-step" data-step="3" style="display:none;">
+      <div class="onboarding-icon"><i class="fa-solid fa-brain"></i></div>
+      <h2 class="onboarding-title">AI-Powered Magic</h2>
+      <p class="onboarding-text">Our AI assistant can analyze your music! Select a passage and choose from <strong>Technical</strong> analysis, <strong>Fingering</strong> suggestions, or even <strong>generate sheet music</strong> for any song!</p>
+      <div class="onboarding-features">
+        <span class="onboarding-highlight"><i class="fa-solid fa-microscope"></i> Technical</span>
+        <span class="onboarding-highlight"><i class="fa-solid fa-hand"></i> Fingering</span>
+        <span class="onboarding-highlight"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate</span>
+      </div>
+      <div class="onboarding-button-group">
+        <button class="onboarding-btn onboarding-btn-primary" onclick="onboardingNext()">Cool!</button>
+        <button class="onboarding-btn onboarding-btn-secondary" onclick="onboardingPrev()">Back</button>
+      </div>
+      <div class="onboarding-progress">
+        <span class="onboarding-dot"></span>
+        <span class="onboarding-dot"></span>
+        <span class="onboarding-dot"></span>
+        <span class="onboarding-dot active"></span>
+        <span class="onboarding-dot"></span>
+      </div>
+    </div>
+
+    <!-- Step 4: Library & More -->
+    <div class="onboarding-step" data-step="4" style="display:none;">
+      <div class="onboarding-icon"><i class="fa-solid fa-book-open"></i></div>
+      <h2 class="onboarding-title">You're All Set!</h2>
+      <p class="onboarding-text">Your uploaded music is saved in the <strong>Library</strong> for easy access. Tap <strong>Search</strong> to find your files, and use the <strong>Menu</strong> for more options!</p>
+      <div class="onboarding-features">
+        <span class="onboarding-highlight"><i class="fa-solid fa-book"></i> Library</span>
+        <span class="onboarding-highlight"><i class="fa-solid fa-magnifying-glass"></i> Search</span>
+        <span class="onboarding-highlight"><i class="fa-solid fa-bars"></i> Menu</span>
+      </div>
+      <div class="onboarding-button-group">
+        <button class="onboarding-btn onboarding-btn-primary" onclick="onboardingComplete()">Start Reading Music!</button>
+        <button class="onboarding-btn onboarding-btn-secondary" onclick="onboardingPrev()">Back</button>
+      </div>
+      <div class="onboarding-progress">
+        <span class="onboarding-dot"></span>
+        <span class="onboarding-dot"></span>
+        <span class="onboarding-dot"></span>
+        <span class="onboarding-dot"></span>
+        <span class="onboarding-dot active"></span>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="controls">
@@ -1064,7 +1430,7 @@ svg {
   </button>
   <div class="zoom-picker-container">
     <button id="mobileZoomBtn">
-      <i class="fa-solid fa-magnifying-glass"></i>
+      <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
       <span>100%</span>
     </button>
     <div class="zoom-picker" id="zoomPicker">
@@ -1080,11 +1446,7 @@ svg {
   </button>
   <button id="mobileSearchMelody">
     <i class="fa-solid fa-magnifying-glass"></i>
-    <span>Search</span>
-  </button>
-  <button id="mobileMenuBtn">
-    <i class="fa-solid fa-bars"></i>
-    <span>Menu</span>
+    <span>Library</span>
   </button>
 </div>
 
@@ -3747,6 +4109,8 @@ function closeMobileMenu() {
 }
 
 if (mobileMenuBtn) mobileMenuBtn.addEventListener('click', openMobileMenu);
+const topMenuBtn = document.getElementById('topMenuBtn');
+if (topMenuBtn) topMenuBtn.addEventListener('click', openMobileMenu);
 if (mobileMenuClose) mobileMenuClose.addEventListener('click', closeMobileMenu);
 if (mobileMenuOverlay) mobileMenuOverlay.addEventListener('click', closeMobileMenu);
 
@@ -3964,5 +4328,218 @@ if (mobileAddStaff) {
 // Sync all mobile icons on load
 syncMobileDarkModeIcon();
 syncMobileSoundIcon();
+
+// =====================================================
+// TELEMETRY & ONBOARDING SYSTEM
+// =====================================================
+
+const Telemetry = {
+  sessionId: null,
+  
+  init() {
+    this.sessionId = localStorage.getItem('emr_session_id');
+    if (!this.sessionId) {
+      this.sessionId = 'ses_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('emr_session_id', this.sessionId);
+    }
+    this.checkSession();
+    this.trackEvent('page_view', { page: 'main' });
+    this.setupButtonTracking();
+  },
+  
+  async checkSession() {
+    try {
+      const response = await fetch('/api/telemetry/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: this.sessionId })
+      });
+      const data = await response.json();
+      
+      if (data.isFirstVisit && !data.onboardingCompleted) {
+        Onboarding.start();
+      }
+    } catch (err) {
+      console.log('Telemetry session check failed:', err);
+      const hasSeenOnboarding = localStorage.getItem('emr_onboarding_complete');
+      if (!hasSeenOnboarding) {
+        Onboarding.start();
+      }
+    }
+  },
+  
+  async trackEvent(eventType, eventData = {}, page = 'main') {
+    try {
+      await fetch('/api/telemetry/event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: this.sessionId,
+          eventType,
+          eventData,
+          page
+        })
+      });
+    } catch (err) {
+      console.log('Telemetry event failed:', err);
+    }
+  },
+  
+  async updateOnboarding(step, completed = false) {
+    try {
+      await fetch('/api/telemetry/onboarding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: this.sessionId,
+          step,
+          completed
+        })
+      });
+    } catch (err) {
+      console.log('Onboarding update failed:', err);
+    }
+  },
+  
+  setupButtonTracking() {
+    const trackedButtons = {
+      'openFileBtn': 'open_file',
+      'toggleLibrary': 'library',
+      'toggleSwipeSelect': 'swipe_select',
+      'zoomIn': 'zoom_in',
+      'zoomOut': 'zoom_out',
+      'toggleDarkMode': 'dark_mode',
+      'playStaff': 'play',
+      'openSettings': 'settings',
+      'searchMelody': 'search',
+      'mobileToggleDarkMode': 'mobile_dark_mode',
+      'mobilePlayStaff': 'mobile_play',
+      'mobileZoomBtn': 'mobile_zoom',
+      'mobileOpenFile': 'mobile_upload',
+      'mobileSearchMelody': 'mobile_search',
+      'mobileMenuBtn': 'mobile_menu',
+      'mobileLibrary': 'mobile_library',
+      'mobileSettings': 'mobile_settings',
+      'mobileSwipeSelect': 'mobile_swipe_select',
+      'mobileScoreInfo': 'mobile_score_info',
+      'mobileSound': 'mobile_sound',
+      'mobileAI': 'mobile_ai'
+    };
+    
+    Object.entries(trackedButtons).forEach(([id, buttonName]) => {
+      const btn = document.getElementById(id);
+      if (btn) {
+        btn.addEventListener('click', () => {
+          this.trackEvent('button_click', { buttonId: buttonName });
+        });
+      }
+    });
+    
+    const aiModeSelect = document.getElementById('aiModeSelect');
+    if (aiModeSelect) {
+      aiModeSelect.addEventListener('change', (e) => {
+        this.trackEvent('ai_mode_change', { mode: e.target.value });
+      });
+    }
+    
+    const xmlInput = document.getElementById('xmlInput');
+    if (xmlInput) {
+      xmlInput.addEventListener('change', () => {
+        this.trackEvent('file_import', { method: 'picker' });
+      });
+    }
+  }
+};
+
+const Onboarding = {
+  currentStep: 0,
+  totalSteps: 5,
+  
+  start() {
+    this.currentStep = 0;
+    this.showStep(0);
+    this.updateProgressDots(0);
+    document.getElementById('onboardingOverlay').classList.add('active');
+    Telemetry.trackEvent('onboarding_start');
+    Telemetry.updateOnboarding(0);
+  },
+  
+  showStep(step) {
+    const steps = document.querySelectorAll('.onboarding-step');
+    steps.forEach(s => s.style.display = 'none');
+    
+    const targetStep = document.querySelector(`.onboarding-step[data-step="${step}"]`);
+    if (targetStep) {
+      targetStep.style.display = 'block';
+      this.updateProgressDots(step);
+      const card = document.getElementById('onboardingCard');
+      card.style.animation = 'none';
+      card.offsetHeight;
+      card.style.animation = 'slideUp 0.4s ease-out';
+    }
+  },
+  
+  updateProgressDots(step) {
+    const allSteps = document.querySelectorAll('.onboarding-step');
+    allSteps.forEach(stepEl => {
+      const dots = stepEl.querySelectorAll('.onboarding-dot');
+      dots.forEach((dot, idx) => {
+        dot.classList.toggle('active', idx === step);
+      });
+    });
+  },
+  
+  next() {
+    if (this.currentStep < this.totalSteps - 1) {
+      this.currentStep++;
+      this.showStep(this.currentStep);
+      Telemetry.trackEvent('onboarding_step', { step: this.currentStep });
+      Telemetry.updateOnboarding(this.currentStep);
+    }
+  },
+  
+  prev() {
+    if (this.currentStep > 0) {
+      this.currentStep--;
+      this.showStep(this.currentStep);
+      Telemetry.trackEvent('onboarding_back', { step: this.currentStep });
+    }
+  },
+  
+  skip() {
+    this.close();
+    Telemetry.trackEvent('onboarding_skipped', { atStep: this.currentStep });
+    localStorage.setItem('emr_onboarding_complete', 'true');
+    Telemetry.updateOnboarding(this.currentStep, true);
+  },
+  
+  complete() {
+    this.close();
+    Telemetry.trackEvent('onboarding_completed');
+    localStorage.setItem('emr_onboarding_complete', 'true');
+    Telemetry.updateOnboarding(this.totalSteps - 1, true);
+  },
+  
+  close() {
+    document.getElementById('onboardingOverlay').classList.remove('active');
+  }
+};
+
+function onboardingNext() { Onboarding.next(); }
+function onboardingPrev() { Onboarding.prev(); }
+function onboardingSkip() { Onboarding.skip(); }
+function onboardingComplete() { Onboarding.complete(); }
+
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(() => Telemetry.init(), 500);
+  
+  const helpButton = document.getElementById('helpButton');
+  if (helpButton) {
+    helpButton.addEventListener('click', () => {
+      Onboarding.start();
+      Telemetry.trackEvent('help_button_click');
+    });
+  }
+});
 </script>
 </html>
