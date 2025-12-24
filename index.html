@@ -30,7 +30,7 @@ listening for notes and plotting them
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <!-- <meta http-equiv="refresh" content="10"> -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
 <meta name="theme-color" content="#000000">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -1319,7 +1319,7 @@ svg {
   <input
     id="xmlInput"
     type="file"
-    accept=".xml,.musicxml,.mxl,.pdf"
+    accept=".xml,.musicxml,.mxl,.pdf,application/xml,text/xml,application/vnd.recordare.musicxml+xml,application/vnd.recordare.musicxml,application/pdf,application/zip,application/octet-stream"
     onchange="fileHandler(event)"
     style="display:none"/>
   <button id="openFileBtn" class="tooltip" data-tooltip="Open File"><i class="fa-solid fa-plus"></i></button>
@@ -1576,6 +1576,39 @@ svg {
 </section>
 </body>
 <script>
+// Global error handlers to catch unhandled errors and trace their source
+window.addEventListener('error', function(event) {
+  // Ignore cross-origin script errors (these show as "Script error." with no details)
+  // They are caused by third-party scripts (like Font Awesome CDN) and are benign
+  if (event.message === 'Script error.' && !event.filename && event.lineno === 0) {
+    console.log('[GLOBAL ERROR] Suppressed cross-origin script error (benign)');
+    return;
+  }
+  
+  console.log('[GLOBAL ERROR]', {
+    message: event.message,
+    filename: event.filename,
+    lineno: event.lineno,
+    colno: event.colno,
+    error: event.error
+  });
+});
+
+window.addEventListener('unhandledrejection', function(event) {
+  const reason = event.reason;
+  // Suppress null/undefined rejections (usually from cross-origin issues)
+  if (reason === null || reason === undefined) {
+    console.log('[UNHANDLED REJECTION] Suppressed null/undefined rejection (benign)');
+    return;
+  }
+  
+  console.log('[UNHANDLED REJECTION]', {
+    reason: reason,
+    message: reason?.message || String(reason),
+    stack: reason?.stack
+  });
+});
+
 // Global vars to cache event state
 let evCache = [];
 let prevDiff = -1;
@@ -1987,10 +2020,27 @@ document.getElementById('renderBeams').addEventListener('click', () => {
 });
 
 function loadDefaultFile() {
+  console.log('[CHECKPOINT] loadDefaultFile: START - fetching ddd.xml');
   fetch('ddd.xml')
-    .then(response => response.text())
-    .then(data => parseAndPopulate(data, 'ddd.xml'))
-    .catch(error => console.error('Error loading the default file:', error));
+    .then(response => {
+      console.log('[CHECKPOINT] loadDefaultFile: Fetch response received', { 
+        status: response.status, 
+        ok: response.ok,
+        type: response.type,
+        url: response.url
+      });
+      return response.text();
+    })
+    .then(data => {
+      console.log('[CHECKPOINT] loadDefaultFile: Text extracted', { length: data?.length });
+      return parseAndPopulate(data, 'ddd.xml');
+    })
+    .then(() => {
+      console.log('[CHECKPOINT] loadDefaultFile: COMPLETE');
+    })
+    .catch(error => {
+      console.error('[CHECKPOINT] loadDefaultFile: ERROR', error?.message || error, error?.stack);
+    });
 }
 
  
@@ -2438,61 +2488,108 @@ function appendInterleavedNotes(notesByPart, measureDiv) {
 }
 
 function populateStaffFromMusicXML(xmlDoc) {
-  noteSteps = [];
-  notePitches = [];
-  pitchSigns = [];
-  noteElements = [];
-  detectedPatterns = {};
-  detectedDescending = {};
-  clearPhraseBoxes();
+  console.log('[CHECKPOINT] populateStaffFromMusicXML: START');
+  
+  try {
+    console.log('[CHECKPOINT] populateStaffFromMusicXML: Resetting state arrays');
+    noteSteps = [];
+    notePitches = [];
+    pitchSigns = [];
+    noteElements = [];
+    detectedPatterns = {};
+    detectedDescending = {};
+    clearPhraseBoxes();
 
-  // Reset music timeline
-  musicTimeline = [];
-  timelineByMeasure = [];
+    musicTimeline = [];
+    timelineByMeasure = [];
 
-  displayScoreInfo(parseScoreInfo(xmlDoc));
+    console.log('[CHECKPOINT] populateStaffFromMusicXML: Parsing and displaying score info');
+    displayScoreInfo(parseScoreInfo(xmlDoc));
 
-  const parts = xmlDoc.getElementsByTagName("part");
-  const sheet = document.getElementById('zoomContainer');
-  sheet.innerHTML = '';
-
-  const measuresByPart = Array.from(parts).map(p => p.getElementsByTagName("measure"));
-  const maxMeasures = Math.max(...measuresByPart.map(m => m.length));
-
-  const parsed = measuresByPart.map(measures => Array.from(measures).map(m => parseMeasureNotes(m)));
-
-  for (let i = 0; i < maxMeasures; i++) {
-    let measureDiv = document.querySelector('.assets .measure').cloneNode(true);
-
-    const notesForMeasure = parsed.map(p => p[i] || []);
-    measureDiv = appendInterleavedNotes(notesForMeasure, measureDiv);
-
-    sheet.appendChild(measureDiv);
+    const parts = xmlDoc.getElementsByTagName("part");
+    console.log('[CHECKPOINT] populateStaffFromMusicXML: Found parts', { count: parts.length });
     
-    // Build timeline for this measure
-    timelineByMeasure[i] = buildMeasureTimeline(notesForMeasure, measureDiv);
+    const sheet = document.getElementById('zoomContainer');
+    if (!sheet) {
+      console.error('[CHECKPOINT] populateStaffFromMusicXML: zoomContainer element NOT FOUND');
+      return;
+    }
+    sheet.innerHTML = '';
+
+    const measuresByPart = Array.from(parts).map(p => p.getElementsByTagName("measure"));
+    const maxMeasures = Math.max(...measuresByPart.map(m => m.length));
+    console.log('[CHECKPOINT] populateStaffFromMusicXML: Measures to process', { maxMeasures });
+
+    console.log('[CHECKPOINT] populateStaffFromMusicXML: Parsing all measure notes');
+    const parsed = measuresByPart.map(measures => Array.from(measures).map(m => parseMeasureNotes(m)));
+
+    console.log('[CHECKPOINT] populateStaffFromMusicXML: Building measure elements');
+    for (let i = 0; i < maxMeasures; i++) {
+      let measureDiv = document.querySelector('.assets .measure').cloneNode(true);
+      if (!measureDiv) {
+        console.error('[CHECKPOINT] populateStaffFromMusicXML: .assets .measure NOT FOUND');
+        continue;
+      }
+
+      const notesForMeasure = parsed.map(p => p[i] || []);
+      measureDiv = appendInterleavedNotes(notesForMeasure, measureDiv);
+
+      sheet.appendChild(measureDiv);
+      timelineByMeasure[i] = buildMeasureTimeline(notesForMeasure, measureDiv);
+      
+      if (i % 10 === 0) {
+        console.log('[CHECKPOINT] populateStaffFromMusicXML: Progress', { measure: i, of: maxMeasures });
+      }
+    }
+    
+    console.log('[CHECKPOINT] populateStaffFromMusicXML: All measures built, calling buildCompleteTimeline');
+    buildCompleteTimeline();
+    
+    console.log('[CHECKPOINT] populateStaffFromMusicXML: Scheduling post-layout operations');
+    requestAnimationFrame(() => {
+        console.log('[CHECKPOINT] populateStaffFromMusicXML: RAF callback - starting pattern detection');
+        try {
+          detectPatternsFromSteps();
+          console.log('[CHECKPOINT] populateStaffFromMusicXML: detectPatternsFromSteps DONE');
+          
+          detectDescendingPatterns();
+          console.log('[CHECKPOINT] populateStaffFromMusicXML: detectDescendingPatterns DONE');
+          
+          updateAllPatterns();
+          console.log('[CHECKPOINT] populateStaffFromMusicXML: updateAllPatterns DONE');
+          
+          findWinningPatterns();
+          console.log('[CHECKPOINT] populateStaffFromMusicXML: findWinningPatterns DONE');
+          
+          showWinningBoxes();
+          console.log('[CHECKPOINT] populateStaffFromMusicXML: showWinningBoxes DONE');
+          
+          updatePhraseSelect();
+          console.log('[CHECKPOINT] populateStaffFromMusicXML: updatePhraseSelect DONE');
+          
+          if (autoFeaturesEnabled) {
+            console.log('[CHECKPOINT] populateStaffFromMusicXML: Running tieify and beamify');
+            tieify();
+            beamify();
+          }
+          
+          if (afterLoadCallback) {
+            console.log('[CHECKPOINT] populateStaffFromMusicXML: Calling afterLoadCallback');
+            afterLoadCallback();
+            afterLoadCallback = null;
+          }
+          
+          console.log('[CHECKPOINT] populateStaffFromMusicXML: RAF callback COMPLETE');
+        } catch (rafErr) {
+          console.error('[CHECKPOINT] populateStaffFromMusicXML: RAF callback ERROR', rafErr?.message || rafErr, rafErr?.stack);
+        }
+    });
+    
+    console.log('[CHECKPOINT] populateStaffFromMusicXML: END (RAF scheduled)');
+  } catch (err) {
+    console.error('[CHECKPOINT] populateStaffFromMusicXML: ERROR', err?.message || err, err?.stack);
+    throw err;
   }
-  
-  // Build complete timeline
-  buildCompleteTimeline();
-  
-  // Ensure layout is calculated before drawing beams and ties
-  requestAnimationFrame(() => {
-      detectPatternsFromSteps();
-      detectDescendingPatterns();
-      updateAllPatterns();
-      findWinningPatterns();
-      showWinningBoxes();
-      updatePhraseSelect();
-      if (autoFeaturesEnabled) {
-        tieify();
-        beamify();
-      }
-      if (afterLoadCallback) {
-        afterLoadCallback();
-        afterLoadCallback = null;
-      }
-  });
 }
 
 function buildMeasureTimeline(notesByPart, measureDiv) {
@@ -2660,14 +2757,48 @@ function plotStaffBlock(existingStaffBlock, pitchSpace, noteType) {
 */
 
 function parseAndPopulate(text, name) {
-  const parser = new DOMParser();
-  const xmlDoc = parser.parseFromString(text, "text/xml");
-  displayScoreInfo(parseScoreInfo(xmlDoc));
-  populateStaffFromMusicXML(xmlDoc);
-  if (autoFeaturesEnabled) requestAnimationFrame(tieify);
-  if (name) {
-    saveToLibrary(name, text);
-    updateOpenFiles(name, text);
+  console.log('[CHECKPOINT] parseAndPopulate: START', { name, textLength: text?.length });
+  
+  try {
+    console.log('[CHECKPOINT] parseAndPopulate: Creating DOMParser');
+    const parser = new DOMParser();
+    
+    console.log('[CHECKPOINT] parseAndPopulate: Parsing XML text');
+    const xmlDoc = parser.parseFromString(text, "text/xml");
+    
+    const parseError = xmlDoc.querySelector('parsererror');
+    if (parseError) {
+      console.error('[CHECKPOINT] parseAndPopulate: XML PARSE ERROR', parseError.textContent);
+    } else {
+      console.log('[CHECKPOINT] parseAndPopulate: XML parsed successfully');
+    }
+    
+    console.log('[CHECKPOINT] parseAndPopulate: Calling parseScoreInfo');
+    const scoreInfo = parseScoreInfo(xmlDoc);
+    console.log('[CHECKPOINT] parseAndPopulate: Score info parsed', scoreInfo);
+    
+    console.log('[CHECKPOINT] parseAndPopulate: Calling displayScoreInfo');
+    displayScoreInfo(scoreInfo);
+    
+    console.log('[CHECKPOINT] parseAndPopulate: Calling populateStaffFromMusicXML');
+    populateStaffFromMusicXML(xmlDoc);
+    console.log('[CHECKPOINT] parseAndPopulate: Staff populated');
+    
+    if (autoFeaturesEnabled) {
+      console.log('[CHECKPOINT] parseAndPopulate: Scheduling tieify (autoFeaturesEnabled)');
+      requestAnimationFrame(tieify);
+    }
+    
+    if (name) {
+      console.log('[CHECKPOINT] parseAndPopulate: Saving to library', name);
+      saveToLibrary(name, text);
+      updateOpenFiles(name, text);
+    }
+    
+    console.log('[CHECKPOINT] parseAndPopulate: COMPLETE');
+  } catch (err) {
+    console.error('[CHECKPOINT] parseAndPopulate: ERROR', err?.message || err, err?.stack);
+    throw err;
   }
 }
 
@@ -2683,9 +2814,109 @@ function hideLoading() {
   overlay.classList.remove('active');
 }
 
+// Frontend error logging - stores locally and syncs to server when possible
+const FrontendLogger = {
+  queue: [],
+  
+  getDeviceInfo() {
+    return {
+      userAgent: navigator.userAgent,
+      platform: navigator.platform,
+      language: navigator.language,
+      online: navigator.onLine,
+      screenWidth: window.screen?.width,
+      screenHeight: window.screen?.height,
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+      timestamp: new Date().toISOString(),
+      url: window.location.href,
+      sessionId: window.telemetrySessionId || 'unknown'
+    };
+  },
+  
+  async log(level, message, extra = {}) {
+    const logEntry = {
+      level,
+      message,
+      deviceInfo: this.getDeviceInfo(),
+      extra,
+      clientTimestamp: Date.now()
+    };
+    
+    console.log(`[FRONTEND:${level.toUpperCase()}]`, message, extra);
+    
+    // Store locally first
+    this.queue.push(logEntry);
+    this.saveToLocalStorage();
+    
+    // Try to send to server
+    try {
+      await fetch('/api/client-logs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(logEntry)
+      });
+      // Remove from queue if successful
+      this.queue = this.queue.filter(e => e !== logEntry);
+      this.saveToLocalStorage();
+    } catch (err) {
+      console.log('[FRONTEND] Could not send log to server, stored locally');
+    }
+  },
+  
+  saveToLocalStorage() {
+    try {
+      localStorage.setItem('frontendErrorLogs', JSON.stringify(this.queue.slice(-50)));
+    } catch (e) {}
+  },
+  
+  loadFromLocalStorage() {
+    try {
+      const stored = localStorage.getItem('frontendErrorLogs');
+      if (stored) this.queue = JSON.parse(stored);
+    } catch (e) {}
+  },
+  
+  async flushQueue() {
+    if (this.queue.length === 0) return;
+    
+    const toSend = [...this.queue];
+    try {
+      await fetch('/api/client-logs/batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ logs: toSend })
+      });
+      this.queue = [];
+      this.saveToLocalStorage();
+      console.log(`[FRONTEND] Flushed ${toSend.length} queued logs to server`);
+    } catch (err) {
+      console.log('[FRONTEND] Queue flush failed, will retry later');
+    }
+  },
+  
+  error(message, extra = {}) { return this.log('error', message, extra); },
+  warn(message, extra = {}) { return this.log('warn', message, extra); },
+  info(message, extra = {}) { return this.log('info', message, extra); }
+};
+
+// Load any queued logs from previous session
+FrontendLogger.loadFromLocalStorage();
+
+// Try to flush queued logs when page loads and when coming back online
+window.addEventListener('load', () => setTimeout(() => FrontendLogger.flushQueue(), 5000));
+window.addEventListener('online', () => FrontendLogger.flushQueue());
+
 async function uploadAndValidateFile(file) {
   const formData = new FormData();
   formData.append('file', file);
+  const uploadStartTime = Date.now();
+  
+  FrontendLogger.info('Upload started', { 
+    filename: file.name, 
+    size: file.size, 
+    type: file.type 
+  });
   
   try {
     const response = await fetch('/api/upload', {
@@ -2696,15 +2927,69 @@ async function uploadAndValidateFile(file) {
     const result = await response.json();
     
     if (!response.ok) {
-      const errorMsg = result.details ? result.details.join(', ') : result.error;
+      const errorMsg = result.details 
+        ? (Array.isArray(result.details) ? result.details.join(', ') : result.details) 
+        : result.error;
+      
+      FrontendLogger.error('Upload server error', {
+        filename: file.name,
+        statusCode: response.status,
+        error: errorMsg,
+        duration: Date.now() - uploadStartTime
+      });
+      
       throw new Error(errorMsg);
     }
     
-    console.log('File validated and stored:', result.upload);
+    // Handle partial success (file stored but DB unavailable)
+    if (result.partial) {
+      FrontendLogger.warn('Upload partial success', {
+        filename: file.name,
+        warning: result.warning,
+        duration: Date.now() - uploadStartTime
+      });
+      console.log('File stored (partial):', result.upload, 'Warning:', result.warning);
+    } else {
+      FrontendLogger.info('Upload success', {
+        filename: file.name,
+        uploadId: result.upload?.id,
+        duration: Date.now() - uploadStartTime
+      });
+      console.log('File validated and stored:', result.upload);
+    }
+    
     return result;
   } catch (err) {
     console.error('Upload validation failed:', err);
-    alert('File validation failed: ' + err.message);
+    
+    let userMessage = err.message;
+    let errorType = 'unknown';
+    
+    if (err.message.includes('getaddrinfo') || err.message.includes('ENOTFOUND') || err.message.includes('EAI_AGAIN')) {
+      userMessage = 'Network connection issue. Please check your internet and try again.';
+      errorType = 'dns_error';
+    } else if (err.message.includes('Failed to fetch') || err.name === 'TypeError') {
+      userMessage = 'Could not connect to server. Please try again.';
+      errorType = 'connection_failed';
+    } else if (err.message.includes('NetworkError')) {
+      userMessage = 'Network error. Please check your connection.';
+      errorType = 'network_error';
+    } else if (err.message.includes('timeout') || err.message.includes('Timeout')) {
+      userMessage = 'Request timed out. Please try again.';
+      errorType = 'timeout';
+    }
+    
+    FrontendLogger.error('Upload failed - client side', {
+      filename: file.name,
+      size: file.size,
+      errorType,
+      errorMessage: err.message,
+      errorName: err.name,
+      duration: Date.now() - uploadStartTime,
+      online: navigator.onLine
+    });
+    
+    alert('Upload failed: ' + userMessage);
     throw err;
   }
 }
@@ -3988,8 +4273,8 @@ function highlightExactFromSelection() {
   queryChatGPT(prompt, apiKey, aiMode)
     .then(res => displayAnalysis(res, startIdx, endIdx))
     .catch(err => {
-      console.error(err);
-      alert('Error: ' + err.message);
+      console.error('AI query error:', err || 'Unknown error');
+      alert('Error: ' + (err?.message || 'An error occurred while processing your request'));
     });
 }
 
@@ -4096,18 +4381,39 @@ window.addEventListener('resize', () => {
 });
 
 if ('serviceWorker' in navigator) {
+  console.log('[CHECKPOINT] ServiceWorker: Supported, setting up');
   let refreshing = false;
   
   navigator.serviceWorker.addEventListener('controllerchange', () => {
+    console.log('[CHECKPOINT] ServiceWorker: Controller changed');
     if (!refreshing) {
       refreshing = true;
+      console.log('[CHECKPOINT] ServiceWorker: Reloading page due to controller change');
       window.location.reload();
     }
   });
   
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('service-worker.js');
+    console.log('[CHECKPOINT] ServiceWorker: Window loaded, registering service-worker.js');
+    navigator.serviceWorker.register('service-worker.js')
+      .then(reg => {
+        console.log('[CHECKPOINT] ServiceWorker: Registered successfully', { scope: reg.scope });
+        reg.addEventListener('updatefound', () => {
+          console.log('[CHECKPOINT] ServiceWorker: Update found');
+          const newWorker = reg.installing;
+          if (newWorker) {
+            newWorker.addEventListener('statechange', () => {
+              console.log('[CHECKPOINT] ServiceWorker: New worker state', { state: newWorker.state });
+            });
+          }
+        });
+      })
+      .catch(err => {
+        console.error('[CHECKPOINT] ServiceWorker: Registration failed', err?.message || err);
+      });
   });
+} else {
+  console.log('[CHECKPOINT] ServiceWorker: NOT supported in this browser');
 }
 
 // Mobile Bottom Bar Event Handlers
@@ -4372,13 +4678,23 @@ const Telemetry = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId: this.sessionId })
       });
+      
+      if (!response.ok) {
+        console.log('[Telemetry] Session endpoint returned', response.status);
+        const hasSeenOnboarding = localStorage.getItem('emr_onboarding_complete');
+        if (!hasSeenOnboarding) {
+          Onboarding.start();
+        }
+        return;
+      }
+      
       const data = await response.json();
       
       if (data.isFirstVisit && !data.onboardingCompleted) {
         Onboarding.start();
       }
     } catch (err) {
-      console.log('Telemetry session check failed:', err);
+      console.log('[Telemetry] Session check failed:', err?.message || 'network error');
       const hasSeenOnboarding = localStorage.getItem('emr_onboarding_complete');
       if (!hasSeenOnboarding) {
         Onboarding.start();
@@ -4388,7 +4704,7 @@ const Telemetry = {
   
   async trackEvent(eventType, eventData = {}, page = 'main') {
     try {
-      await fetch('/api/telemetry/event', {
+      const response = await fetch('/api/telemetry/event', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -4398,14 +4714,17 @@ const Telemetry = {
           page
         })
       });
+      if (!response.ok) {
+        console.log('[Telemetry] Event endpoint returned', response.status);
+      }
     } catch (err) {
-      console.log('Telemetry event failed:', err);
+      console.log('[Telemetry] Event failed:', err?.message || 'network error');
     }
   },
   
   async updateOnboarding(step, completed = false) {
     try {
-      await fetch('/api/telemetry/onboarding', {
+      const response = await fetch('/api/telemetry/onboarding', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -4414,8 +4733,11 @@ const Telemetry = {
           completed
         })
       });
+      if (!response.ok) {
+        console.log('[Telemetry] Onboarding endpoint returned', response.status);
+      }
     } catch (err) {
-      console.log('Onboarding update failed:', err);
+      console.log('[Telemetry] Onboarding update failed:', err?.message || 'network error');
     }
   },
   
@@ -4549,7 +4871,16 @@ function onboardingSkip() { Onboarding.skip(); }
 function onboardingComplete() { Onboarding.complete(); }
 
 document.addEventListener('DOMContentLoaded', function() {
-  setTimeout(() => Telemetry.init(), 500);
+  console.log('[CHECKPOINT] DOMContentLoaded: START');
+  console.log('[CHECKPOINT] DOMContentLoaded: User agent:', navigator.userAgent);
+  console.log('[CHECKPOINT] DOMContentLoaded: Online:', navigator.onLine);
+  console.log('[CHECKPOINT] DOMContentLoaded: Screen:', window.screen?.width, 'x', window.screen?.height);
+  console.log('[CHECKPOINT] DOMContentLoaded: Viewport:', window.innerWidth, 'x', window.innerHeight);
+  
+  setTimeout(() => {
+    console.log('[CHECKPOINT] DOMContentLoaded: Initializing Telemetry');
+    Telemetry.init();
+  }, 500);
   
   const helpButton = document.getElementById('helpButton');
   if (helpButton) {
@@ -4558,6 +4889,8 @@ document.addEventListener('DOMContentLoaded', function() {
       Telemetry.trackEvent('help_button_click');
     });
   }
+  
+  console.log('[CHECKPOINT] DOMContentLoaded: COMPLETE');
 });
 </script>
 </html>

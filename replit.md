@@ -6,6 +6,19 @@ eMusicReader is a browser-based music notation reader and editor that allows use
 
 ## Recent Changes
 
+**December 24, 2025**
+- Added comprehensive error logging system that persists all errors to database:
+  - New `error_logs` table stores: message, stack trace, request details, timestamps
+  - Captures HTTP request context (method, path, user-agent, IP)
+  - Automatically sanitizes sensitive data (passwords, tokens)
+  - Handles unhandled promise rejections and uncaught exceptions
+- Admin endpoints for viewing error logs:
+  - GET `/api/admin/error-logs` - List errors with filtering (level, status_code, search, date range)
+  - GET `/api/admin/error-logs/:id` - View detailed error information
+  - GET `/api/admin/error-stats` - Error summary with trends and top errors
+- Improved error messages for users - technical DNS/network errors now show friendly messages
+- Fixed file upload error handling to log all failures for debugging
+
 **December 23, 2025**
 - Added first-run onboarding experience with friendly 5-step tutorial:
   - Step 1: Welcome and feature overview
