@@ -101,6 +101,18 @@ body.dark-mode {
 .dark-mode .sheet {
   opacity: var(--dark-opacity);
 }
+
+/* Light mode override - forces light theme even when device is in dark mode */
+.light-mode {
+  --space-color: white;
+  --line-color: black;
+  --note-color: black;
+  --dark-opacity: 1;
+}
+
+body.light-mode {
+  background-color: white;
+}
 input[type="range"] {
   accent-color: var(--line-color);
 }
@@ -4451,21 +4463,24 @@ function applyThemeMode(mode) {
   themeMode = mode;
   localStorage.setItem('themeMode', mode);
   
-  // Remove dark-mode class first
-  document.documentElement.classList.remove('dark-mode');
-  document.body.classList.remove('dark-mode');
+  // Remove all theme classes first
+  document.documentElement.classList.remove('dark-mode', 'light-mode');
+  document.body.classList.remove('dark-mode', 'light-mode');
   
   if (mode === 'dark') {
     document.documentElement.classList.add('dark-mode');
     document.body.classList.add('dark-mode');
+  } else if (mode === 'light') {
+    // Force light mode even if device is in dark mode
+    document.documentElement.classList.add('light-mode');
+    document.body.classList.add('light-mode');
   } else if (mode === 'auto') {
-    // Check system preference
+    // Check system preference - no extra class needed, CSS media query handles it
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
       document.documentElement.classList.add('dark-mode');
       document.body.classList.add('dark-mode');
     }
   }
-  // 'light' mode = no dark-mode class (default)
   
   syncMobileDarkModeIcon();
   syncDesktopDarkModeIcon();
