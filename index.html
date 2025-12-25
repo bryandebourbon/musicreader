@@ -1421,8 +1421,8 @@ svg {
 <!-- Mobile Bottom Bar -->
 <div class="bottom-bar">
   <button id="mobileToggleDarkMode">
-    <i class="fa-solid fa-moon"></i>
-    <span>Dark</span>
+    <i class="fa-solid fa-circle-half-stroke"></i>
+    <span>Auto</span>
   </button>
   <button id="mobilePlayStaff">
     <i class="fa-solid fa-play"></i>
@@ -1479,6 +1479,10 @@ svg {
     <button class="mobile-menu-item" id="mobileSound">
       <i class="fa-solid fa-volume-high"></i>
       Sound
+    </button>
+    <button class="mobile-menu-item" id="mobileMidi">
+      <i class="fa-solid fa-keyboard"></i>
+      MIDI
     </button>
     <button class="mobile-menu-item" id="mobileAI">
       <i class="fa-solid fa-brain"></i>
@@ -3507,12 +3511,13 @@ closeSettings.addEventListener('click', () => {
   settingsModal.classList.remove('open');
 });
 darkModeToggle.addEventListener('click', () => {
-  document.documentElement.classList.toggle('dark-mode');
-  document.body.classList.toggle('dark-mode');
-  const icon = darkModeToggle.querySelector('i');
-  if (icon) {
-    icon.classList.toggle('fa-moon');
-    icon.classList.toggle('fa-sun');
+  // Cycle: auto -> light -> dark -> auto (synced with mobile)
+  if (themeMode === 'auto') {
+    applyThemeMode('light');
+  } else if (themeMode === 'light') {
+    applyThemeMode('dark');
+  } else {
+    applyThemeMode('auto');
   }
 });
 if (toggleScoreInfoBtn) {
@@ -4438,25 +4443,96 @@ if (topMenuBtn) topMenuBtn.addEventListener('click', openMobileMenu);
 if (mobileMenuClose) mobileMenuClose.addEventListener('click', closeMobileMenu);
 if (mobileMenuOverlay) mobileMenuOverlay.addEventListener('click', closeMobileMenu);
 
-// Mobile bottom bar buttons
+// Mobile bottom bar buttons - Theme mode: 'auto', 'light', 'dark'
+let themeMode = localStorage.getItem('themeMode') || 'auto';
 const mobileToggleDarkMode = document.getElementById('mobileToggleDarkMode');
-if (mobileToggleDarkMode) {
-  mobileToggleDarkMode.addEventListener('click', () => {
-    const desktopDarkMode = document.getElementById('toggleDarkMode');
-    if (desktopDarkMode) desktopDarkMode.click();
-    syncMobileDarkModeIcon();
-  });
+
+function applyThemeMode(mode) {
+  themeMode = mode;
+  localStorage.setItem('themeMode', mode);
+  
+  // Remove dark-mode class first
+  document.documentElement.classList.remove('dark-mode');
+  document.body.classList.remove('dark-mode');
+  
+  if (mode === 'dark') {
+    document.documentElement.classList.add('dark-mode');
+    document.body.classList.add('dark-mode');
+  } else if (mode === 'auto') {
+    // Check system preference
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      document.documentElement.classList.add('dark-mode');
+      document.body.classList.add('dark-mode');
+    }
+  }
+  // 'light' mode = no dark-mode class (default)
+  
+  syncMobileDarkModeIcon();
+  syncDesktopDarkModeIcon();
 }
 
 function syncMobileDarkModeIcon() {
   const mobileIcon = mobileToggleDarkMode?.querySelector('i');
-  const isDark = document.body.classList.contains('dark-mode');
+  const mobileLabel = mobileToggleDarkMode?.querySelector('span');
+  
   if (mobileIcon) {
-    mobileIcon.classList.toggle('fa-moon', !isDark);
-    mobileIcon.classList.toggle('fa-sun', isDark);
+    mobileIcon.classList.remove('fa-moon', 'fa-sun', 'fa-circle-half-stroke');
+    if (themeMode === 'dark') {
+      mobileIcon.classList.add('fa-moon');
+    } else if (themeMode === 'light') {
+      mobileIcon.classList.add('fa-sun');
+    } else {
+      mobileIcon.classList.add('fa-circle-half-stroke');
+    }
   }
+  
+  if (mobileLabel) {
+    mobileLabel.textContent = themeMode.charAt(0).toUpperCase() + themeMode.slice(1);
+  }
+  
+  const isDark = document.body.classList.contains('dark-mode');
   mobileToggleDarkMode?.classList.toggle('active', isDark);
 }
+
+function syncDesktopDarkModeIcon() {
+  const desktopDarkMode = document.getElementById('toggleDarkMode');
+  const icon = desktopDarkMode?.querySelector('i');
+  if (icon) {
+    icon.classList.remove('fa-moon', 'fa-sun', 'fa-circle-half-stroke');
+    if (themeMode === 'dark') {
+      icon.classList.add('fa-moon');
+    } else if (themeMode === 'light') {
+      icon.classList.add('fa-sun');
+    } else {
+      icon.classList.add('fa-circle-half-stroke');
+    }
+  }
+}
+
+if (mobileToggleDarkMode) {
+  mobileToggleDarkMode.addEventListener('click', () => {
+    // Cycle: auto -> light -> dark -> auto
+    if (themeMode === 'auto') {
+      applyThemeMode('light');
+    } else if (themeMode === 'light') {
+      applyThemeMode('dark');
+    } else {
+      applyThemeMode('auto');
+    }
+  });
+}
+
+// Listen for system theme changes when in auto mode
+if (window.matchMedia) {
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+    if (themeMode === 'auto') {
+      applyThemeMode('auto');
+    }
+  });
+}
+
+// Apply saved theme on load
+applyThemeMode(themeMode);
 
 const mobilePlayStaff = document.getElementById('mobilePlayStaff');
 if (mobilePlayStaff) {
@@ -4590,6 +4666,158 @@ function syncMobileSoundIcon() {
     mobileIcon.classList.toggle('fa-volume-xmark', isMuted);
   }
 }
+
+// ============= MIDI Keyboard Support =============
+let midiEnabled = false;
+let midiAccess = null;
+const activeMidiNotes = new Map(); // noteNumber -> { osc, gain }
+
+function midiToFrequency(note) {
+  return 440 * Math.pow(2, (note - 69) / 12);
+}
+
+function midiNoteOn(note, velocity) {
+  const audioCtx = getAudioContext();
+  if (!audioCtx) return;
+  
+  // Stop existing note if playing
+  midiNoteOff(note);
+  
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  
+  // Piano-like sound with multiple harmonics
+  osc.type = 'triangle';
+  osc.frequency.value = midiToFrequency(note);
+  
+  // Velocity 0-127 -> gain 0-0.4
+  const v = Math.max(0, Math.min(127, velocity)) / 127;
+  gain.gain.setValueAtTime(0, audioCtx.currentTime);
+  gain.gain.linearRampToValueAtTime(0.4 * v, audioCtx.currentTime + 0.02); // Attack
+  
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start();
+  
+  activeMidiNotes.set(note, { osc, gain });
+  console.log(`[MIDI] Note ON: ${note} (${midiToFrequency(note).toFixed(1)}Hz) vel=${velocity}`);
+}
+
+function midiNoteOff(note) {
+  const voice = activeMidiNotes.get(note);
+  if (!voice) return;
+  
+  const audioCtx = getAudioContext();
+  const t = audioCtx.currentTime;
+  
+  // Quick release to avoid clicks
+  voice.gain.gain.setTargetAtTime(0, t, 0.03);
+  voice.osc.stop(t + 0.1);
+  
+  activeMidiNotes.delete(note);
+  console.log(`[MIDI] Note OFF: ${note}`);
+}
+
+function handleMidiMessage(e) {
+  const [status, note, vel] = e.data;
+  const cmd = status & 0xf0;
+  
+  // 0x90 = note on, 0x80 = note off
+  if (cmd === 0x90 && vel > 0) {
+    midiNoteOn(note, vel);
+  } else if (cmd === 0x80 || (cmd === 0x90 && vel === 0)) {
+    midiNoteOff(note);
+  }
+}
+
+function attachMidiHandlers() {
+  if (!midiAccess) return;
+  
+  for (const input of midiAccess.inputs.values()) {
+    console.log(`[MIDI] Found input: ${input.name} (${input.manufacturer})`);
+    input.onmidimessage = handleMidiMessage;
+  }
+}
+
+async function enableMidi() {
+  if (midiEnabled) {
+    console.log('[MIDI] Already enabled');
+    return true;
+  }
+  
+  // Start audio context (required by iOS)
+  const audioCtx = getAudioContext();
+  try {
+    await audioCtx.resume();
+    console.log('[MIDI] AudioContext resumed');
+  } catch (e) {
+    console.warn('[MIDI] AudioContext resume failed:', e);
+  }
+  
+  if (!navigator.requestMIDIAccess) {
+    // Check if we're in an embedded browser (Replit app, in-app browser, etc)
+    const isEmbedded = window.navigator.standalone === false || 
+                       document.referrer.includes('replit') ||
+                       window.self !== window.top;
+    
+    let message = 'Web MIDI is not supported in this browser.\n\n';
+    if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+      message += 'To use MIDI on iOS:\n';
+      message += '1. Copy this URL: ' + window.location.href + '\n';
+      message += '2. Open Safari app (not an in-app browser)\n';
+      message += '3. Paste the URL and tap Go\n';
+      message += '4. Then tap MIDI again';
+    } else {
+      message += 'Try using Chrome or Edge on desktop.';
+    }
+    alert(message);
+    
+    // Also copy URL to clipboard for convenience
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(window.location.href).then(() => {
+        console.log('[MIDI] URL copied to clipboard');
+      }).catch(() => {});
+    }
+    return false;
+  }
+  
+  try {
+    midiAccess = await navigator.requestMIDIAccess();
+    console.log('[MIDI] Access granted');
+    console.log(`[MIDI] Inputs: ${midiAccess.inputs.size}, Outputs: ${midiAccess.outputs.size}`);
+    
+    // Attach handlers to all current inputs
+    attachMidiHandlers();
+    
+    // Handle hot-plug of MIDI devices
+    midiAccess.onstatechange = (e) => {
+      console.log(`[MIDI] Device ${e.port.state}: ${e.port.name}`);
+      if (e.port.type === 'input' && e.port.state === 'connected') {
+        e.port.onmidimessage = handleMidiMessage;
+      }
+    };
+    
+    midiEnabled = true;
+    return true;
+  } catch (err) {
+    console.error('[MIDI] Access denied:', err);
+    alert('MIDI access denied. Please allow MIDI access and try again.');
+    return false;
+  }
+}
+
+const mobileMidi = document.getElementById('mobileMidi');
+if (mobileMidi) {
+  mobileMidi.addEventListener('click', async () => {
+    const success = await enableMidi();
+    if (success) {
+      mobileMidi.classList.add('active');
+      mobileMidi.querySelector('span').textContent = 'MIDI On';
+      alert(`MIDI enabled! ${midiAccess?.inputs.size || 0} device(s) detected. Play your keyboard to hear sounds.`);
+    }
+    closeMobileMenu();
+  });
+}
+// ============= End MIDI Support =============
 
 const mobileAI = document.getElementById('mobileAI');
 if (mobileAI) {

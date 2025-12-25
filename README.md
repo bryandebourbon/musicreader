@@ -62,3 +62,7 @@ graph TD
     index --> audio[Web Audio API]
     index --> manifest[Web Manifest]
 ```
+
+
+
+change dark mode to dark / light / auto

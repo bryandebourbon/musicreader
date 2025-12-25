@@ -1,0 +1,97 @@
+Here’s a clean, working JavaScript-only example that:
+	•	asks for Web MIDI API [Web MIDI API] access after a button tap
+	•	listens to your USB-C MIDI keyboard
+	•	plays notes using Web Audio API [Web Audio API]
+
+Minimal “press key = sound” JS
+
+<button id="enable">Enable MIDI</button>
+
+<script>
+let audioCtx;
+const active = new Map(); // noteNumber -> { osc, gain }
+
+function midiToFreq(note) {
+  return 440 * Math.pow(2, (note - 69) / 12);
+}
+
+function noteOn(note, velocity) {
+  if (!audioCtx) return;
+
+  // If already active, stop & replace
+  noteOff(note);
+
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  // Simple synth voice
+  osc.type = "sine";
+  osc.frequency.value = midiToFreq(note);
+
+  // Velocity 0-127 -> gain 0-0.3 (tweak as you like)
+  const v = Math.max(0, Math.min(127, velocity)) / 127;
+  gain.gain.value = 0.3 * v;
+
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start();
+
+  active.set(note, { osc, gain });
+}
+
+function noteOff(note) {
+  const voice = active.get(note);
+  if (!voice) return;
+
+  // Tiny release to avoid clicks
+  const t = audioCtx.currentTime;
+  voice.gain.gain.setTargetAtTime(0, t, 0.02);
+  voice.osc.stop(t + 0.08);
+
+  active.delete(note);
+}
+
+document.getElementById("enable").addEventListener("click", async () => {
+  // Audio must start from a user gesture on iOS
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  await audioCtx.resume();
+
+  if (!navigator.requestMIDIAccess) {
+    alert("Web MIDI not supported in this browser.");
+    return;
+  }
+
+  const midi = await navigator.requestMIDIAccess();
+
+  // Attach handlers to all inputs
+  for (const input of midi.inputs.values()) {
+    input.onmidimessage = (e) => {
+      const [status, note, vel] = e.data;
+      const cmd = status & 0xf0;
+
+      // 0x90 = note on, 0x80 = note off (note on with vel=0 is also off)
+      if (cmd === 0x90 && vel > 0) noteOn(note, vel);
+      else if (cmd === 0x80 || (cmd === 0x90 && vel === 0)) noteOff(note);
+    };
+  }
+
+  // If you plug/unplug devices later, handle hot changes:
+  midi.onstatechange = () => {
+    for (const input of midi.inputs.values()) {
+      if (!input.onmidimessage) {
+        input.onmidimessage = (e) => {
+          const [status, note, vel] = e.data;
+          const cmd = status & 0xf0;
+          if (cmd === 0x90 && vel > 0) noteOn(note, vel);
+          else if (cmd === 0x80 || (cmd === 0x90 && vel === 0)) noteOff(note);
+        };
+      }
+    }
+  };
+});
+</script>
+
+Notes (iPhone Safari gotchas)
+	•	You must start MIDI + audio from a tap (that button) or iOS will block it.
+	•	Works best in Safari, not Chrome on iOS (Chrome uses WebKit too, but MIDI support can differ by version/settings).
+
+If you tell me the keyboard model (e.g., Akai MPK Mini, Arturia, etc.), I can add a tiny UI to show which MIDI input Safari is seeing + a dropdown to pick the device.

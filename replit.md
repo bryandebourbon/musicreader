@@ -6,6 +6,13 @@ eMusicReader is a browser-based music notation reader and editor that allows use
 
 ## Recent Changes
 
+**December 25, 2025**
+- Updated mobile dark/light mode button to have 3 modes: Dark, Light, and Auto
+- Auto mode follows the user's iPhone/system preference via prefers-color-scheme
+- Theme preference is saved to localStorage and persists between sessions
+- Desktop toolbar dark mode button also synced to use the same 3-mode cycle
+- Icons: Auto (circle-half-stroke), Light (sun), Dark (moon)
+
 **December 24, 2025**
 - Added comprehensive error logging system that persists all errors to database:
   - New `error_logs` table stores: message, stack trace, request details, timestamps
